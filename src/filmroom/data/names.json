@@ -1,0 +1,32 @@
+{
+  "first": [
+    "Aled", "Anders", "Arlo", "Bastian", "Bram", "Caius", "Cillian", "Corin",
+    "Dario", "Davor", "Eamon", "Elio", "Emeka", "Ewan", "Fabien", "Femi",
+    "Gideon", "Goran", "Hamish", "Hugo", "Idris", "Ilya", "Jarek", "Jonas",
+    "Kasper", "Kofi", "Lasse", "Leandro", "Malik", "Mateo", "Milo", "Nico",
+    "Niall", "Oskar", "Otis", "Pavel", "Piers", "Quentin", "Rafferty", "Remy",
+    "Rhys", "Ruben", "Santi", "Soren", "Tadhg", "Teo", "Tobias", "Ugo",
+    "Vasco", "Viktor", "Wilf", "Xander", "Yannick", "Yusuf", "Zeno", "Zoltan",
+    "Ansel", "Brennan", "Cosmo", "Dane", "Emil", "Fintan", "Gael", "Hollis"
+  ],
+  "last": [
+    "Ashgrove", "Bellweather", "Brackley", "Calloway", "Carrow", "Dunmore", "Ellery", "Fairbrook",
+    "Fenwick", "Garside", "Gilmour", "Hadley", "Halloran", "Harrowgate", "Ingleby", "Jessup",
+    "Kettering", "Kilbride", "Lachlan", "Langstrom", "Larkspur", "Marchetti", "Merriman", "Moorcroft",
+    "Nettleton", "Northcott", "Oakhurst", "Okonkwo", "Pellegrin", "Penhallow", "Quarrie", "Radleigh",
+    "Ravenhill", "Rookwood", "Salcombe", "Sandoval", "Selwyn", "Silvestri", "Strand", "Tallis",
+    "Thornbury", "Torrance", "Underhill", "Vasquez", "Varga", "Wexley", "Whitcombe", "Winslow",
+    "Yardley", "Zelinski", "Abernethy", "Blackmore", "Castellan", "Delacourt", "Eastwick", "Farrant",
+    "Grenfell", "Hollinshead", "Iverson", "Juniper", "Kowalczyk", "Lindqvist", "Mallory", "Nakamura"
+  ],
+  "clubs": [
+    "Ashby Rovers", "Brackwater Athletic", "Carrow Vale", "Dunmere Town", "Eastholm United",
+    "Fernbridge FC", "Glenmoor City", "Harbourside FC", "Ironmere United", "Juniper Park",
+    "Kestrel Rovers", "Larkhill Athletic", "Marlow Bridge", "Northvale FC", "Oakfield Wanderers",
+    "Pellbury Town", "Queensmere", "Ravenhill Albion", "Saltmarsh United", "Thornbury FC",
+    "Upperdale", "Valebrook Athletic", "Westholt Rangers", "Yarrow City", "Ambermoor",
+    "Blackwater Vale", "Coldharbour FC", "Dovecote Rovers", "Elmstead Town", "Foxley United",
+    "Greystone FC", "Highfold Harriers", "Kingsmere", "Lowfield Town", "Millbrook FC",
+    "Netherby United", "Pinewood Athletic", "Redmarsh City", "Stonehaven Rovers", "Tidewater FC"
+  ]
+}

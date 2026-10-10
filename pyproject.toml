@@ -1,0 +1,43 @@
+[project]
+name = "filmroom"
+version = "0.1.0"
+description = "AI film-room analyst: what was available and not taken, on synthetic football data"
+readme = "README.md"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "fastapi>=0.115",
+    "httpx2>=2.13",
+    "numpy>=2.1",
+    "openpyxl>=3.1",
+    "pandas>=2.2",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+    "uvicorn>=0.32",
+]
+
+[project.scripts]
+filmroom-eval = "filmroom.eval.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "ruff>=0.8",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/filmroom"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["data: needs the real SoccER dataset (skipped when DATA_DIR is not available)"]

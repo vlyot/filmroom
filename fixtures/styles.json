@@ -1,0 +1,41 @@
+[
+  {
+    "id": "possession-high-press",
+    "name": "Possession + High Press",
+    "with_ball": "possession",
+    "without_ball": "high_press",
+    "sliders": { "risk_tolerance": 0.3, "verticality": 0.3, "press_trigger": 0.8, "line_height": 0.8 },
+    "weights": {
+      "p_success": 1.0,
+      "danger_gain": 0.6,
+      "progression": 0.2,
+      "receiver_space": 0.5,
+      "lane_openness": 0.5,
+      "switch_of_play": 0.4
+    },
+    "principles": [
+      { "text": "Keep the ball: prefer the safer pass when the gain is similar", "factor": "p_success", "source": "Positional play" },
+      { "text": "Find the free player in space", "factor": "receiver_space", "source": "Positional play" },
+      { "text": "Move the ball to the weak side when one side is overloaded", "factor": "switch_of_play", "source": "Positional play" }
+    ]
+  },
+  {
+    "id": "counter-low-block",
+    "name": "Counter + Low Block",
+    "with_ball": "counter",
+    "without_ball": "low_block",
+    "sliders": { "risk_tolerance": 0.7, "verticality": 0.9, "press_trigger": 0.2, "line_height": 0.2 },
+    "weights": {
+      "p_success": 0.4,
+      "danger_gain": 1.2,
+      "progression": 0.9,
+      "receiver_space": 0.3,
+      "lane_openness": 0.3,
+      "switch_of_play": 0.1
+    },
+    "principles": [
+      { "text": "Play forward quickly after winning the ball", "factor": "progression", "source": "Counter-attacking play" },
+      { "text": "Accept a lower success rate for a bigger threat", "factor": "danger_gain", "source": "Counter-attacking play" }
+    ]
+  }
+]

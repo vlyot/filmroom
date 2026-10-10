@@ -1,0 +1,1166 @@
+{
+  "x-contract-version": "0.1.0",
+  "$defs": {
+    "BundleManifest": {
+      "additionalProperties": false,
+      "properties": {
+        "contract_version": {
+          "type": "string"
+        },
+        "generated_at": {
+          "type": "string"
+        },
+        "public": {
+          "type": "boolean"
+        },
+        "files": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "contract_version",
+        "generated_at",
+        "public",
+        "files"
+      ],
+      "title": "BundleManifest",
+      "type": "object"
+    },
+    "Claim": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": [
+            "better_option",
+            "turning_point",
+            "player_skill",
+            "style_principle"
+          ],
+          "type": "string"
+        },
+        "ref": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "ref"
+      ],
+      "title": "Claim",
+      "type": "object"
+    },
+    "ClientMessage": {
+      "$ref": "#/$defs/Control",
+      "title": "ClientMessage"
+    },
+    "Clock": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "clock",
+          "default": "clock",
+          "type": "string"
+        },
+        "t_ms": {
+          "type": "integer"
+        },
+        "speed": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "t_ms",
+        "speed"
+      ],
+      "title": "Clock",
+      "type": "object"
+    },
+    "Control": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "control",
+          "default": "control",
+          "type": "string"
+        },
+        "action": {
+          "enum": [
+            "play",
+            "pause",
+            "seek",
+            "speed"
+          ],
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "action"
+      ],
+      "title": "Control",
+      "type": "object"
+    },
+    "DangerPoint": {
+      "additionalProperties": false,
+      "properties": {
+        "t_ms": {
+          "type": "integer"
+        },
+        "xt": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "t_ms",
+        "xt"
+      ],
+      "title": "DangerPoint",
+      "type": "object"
+    },
+    "Decision": {
+      "additionalProperties": false,
+      "properties": {
+        "idx": {
+          "type": "integer"
+        },
+        "frame": {
+          "type": "integer"
+        },
+        "t_ms": {
+          "type": "integer"
+        },
+        "pid": {
+          "type": "integer"
+        },
+        "kind": {
+          "enum": [
+            "pass",
+            "shot",
+            "carry"
+          ],
+          "type": "string"
+        },
+        "chosen_option_id": {
+          "type": "string"
+        },
+        "options": {
+          "items": {
+            "$ref": "#/$defs/Option"
+          },
+          "type": "array"
+        },
+        "is_turning_point": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "idx",
+        "frame",
+        "t_ms",
+        "pid",
+        "kind",
+        "chosen_option_id",
+        "options",
+        "is_turning_point"
+      ],
+      "title": "Decision",
+      "type": "object"
+    },
+    "ErrorMessage": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "error",
+          "default": "error",
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "message"
+      ],
+      "title": "ErrorMessage",
+      "type": "object"
+    },
+    "Fact": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "kind": {
+          "enum": [
+            "prob",
+            "band",
+            "metres",
+            "xt",
+            "count",
+            "player",
+            "text"
+          ],
+          "type": "string"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "value",
+        "kind"
+      ],
+      "title": "Fact",
+      "type": "object"
+    },
+    "FlipReason": {
+      "additionalProperties": false,
+      "properties": {
+        "vs_style_id": {
+          "type": "string"
+        },
+        "factor": {
+          "enum": [
+            "p_success",
+            "danger_gain",
+            "progression",
+            "receiver_space",
+            "lane_openness",
+            "switch_of_play"
+          ],
+          "type": "string"
+        },
+        "contribution": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "vs_style_id",
+        "factor",
+        "contribution"
+      ],
+      "title": "FlipReason",
+      "type": "object"
+    },
+    "Health": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "const": "ok",
+          "type": "string"
+        },
+        "contract_version": {
+          "type": "string"
+        },
+        "source": {
+          "enum": [
+            "fixtures",
+            "database"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "contract_version",
+        "source"
+      ],
+      "title": "Health",
+      "type": "object"
+    },
+    "Match": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "mode": {
+          "type": "string"
+        },
+        "duration_ms": {
+          "type": "integer"
+        },
+        "has_events": {
+          "type": "boolean"
+        },
+        "teams": {
+          "items": {
+            "$ref": "#/$defs/Team"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "type": "array"
+        },
+        "players": {
+          "items": {
+            "$ref": "#/$defs/PlayerRef"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "mode",
+        "duration_ms",
+        "has_events",
+        "teams",
+        "players"
+      ],
+      "title": "Match",
+      "type": "object"
+    },
+    "MatchEnd": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "match_end",
+          "default": "match_end",
+          "type": "string"
+        }
+      },
+      "title": "MatchEnd",
+      "type": "object"
+    },
+    "MatchSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "mode": {
+          "type": "string"
+        },
+        "duration_ms": {
+          "type": "integer"
+        },
+        "has_events": {
+          "type": "boolean"
+        },
+        "teams": {
+          "items": {
+            "$ref": "#/$defs/Team"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "mode",
+        "duration_ms",
+        "has_events",
+        "teams"
+      ],
+      "title": "MatchSummary",
+      "type": "object"
+    },
+    "Narrative": {
+      "additionalProperties": false,
+      "description": "`template` holds {fact.id} slots; the client fills them from Possession.facts, so no number in a\nnarrative ever comes from the LLM.",
+      "properties": {
+        "possession_id": {
+          "type": "string"
+        },
+        "style_id": {
+          "type": "string"
+        },
+        "audience": {
+          "enum": [
+            "coach",
+            "player",
+            "fan"
+          ],
+          "type": "string"
+        },
+        "language": {
+          "pattern": "^[a-z]{2}(-[A-Z]{2})?$",
+          "type": "string"
+        },
+        "template": {
+          "type": "string"
+        },
+        "claims": {
+          "items": {
+            "$ref": "#/$defs/Claim"
+          },
+          "type": "array"
+        },
+        "status": {
+          "enum": [
+            "template",
+            "pending",
+            "verified",
+            "failed"
+          ],
+          "type": "string"
+        },
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "possession_id",
+        "style_id",
+        "audience",
+        "language",
+        "template",
+        "claims",
+        "status"
+      ],
+      "title": "Narrative",
+      "type": "object"
+    },
+    "NarrativeReady": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "narrative",
+          "default": "narrative",
+          "type": "string"
+        },
+        "narrative": {
+          "$ref": "#/$defs/Narrative"
+        }
+      },
+      "required": [
+        "narrative"
+      ],
+      "title": "NarrativeReady",
+      "type": "object"
+    },
+    "Option": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "pass",
+            "shot",
+            "carry"
+          ],
+          "type": "string"
+        },
+        "target_pid": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "target_xy": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "p_success": {
+          "maximum": 1,
+          "minimum": 0,
+          "type": "number"
+        },
+        "p_success_band": {
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ],
+          "type": "string"
+        },
+        "danger_gain": {
+          "type": "number"
+        },
+        "factors": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "propertyNames": {
+            "enum": [
+              "p_success",
+              "danger_gain",
+              "progression",
+              "receiver_space",
+              "lane_openness",
+              "switch_of_play"
+            ]
+          },
+          "type": "object"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "target_pid",
+        "target_xy",
+        "p_success",
+        "p_success_band",
+        "danger_gain",
+        "factors"
+      ],
+      "title": "Option",
+      "type": "object"
+    },
+    "OverlayEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "t_ms": {
+          "type": "integer"
+        },
+        "possession_id": {
+          "type": "string"
+        },
+        "moment_type": {
+          "enum": [
+            "turning_point",
+            "shot",
+            "goal"
+          ],
+          "type": "string"
+        },
+        "chosen_option_id": {
+          "type": "string"
+        },
+        "best_option_id": {
+          "type": "string"
+        },
+        "captions": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        }
+      },
+      "required": [
+        "t_ms",
+        "possession_id",
+        "moment_type",
+        "chosen_option_id",
+        "best_option_id",
+        "captions"
+      ],
+      "title": "OverlayEvent",
+      "type": "object"
+    },
+    "PlayerRef": {
+      "additionalProperties": false,
+      "properties": {
+        "pid": {
+          "type": "integer"
+        },
+        "key": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "shirt": {
+          "type": "integer"
+        },
+        "team": {
+          "enum": [
+            0,
+            1
+          ],
+          "type": "integer"
+        },
+        "role": {
+          "enum": [
+            "GK",
+            "OUT"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "pid",
+        "key",
+        "name",
+        "shirt",
+        "team",
+        "role"
+      ],
+      "title": "PlayerRef",
+      "type": "object"
+    },
+    "PositionsChunk": {
+      "additionalProperties": false,
+      "description": "Samples at a fixed rate. Each row is [x, y] per entity in `pids` order (ball first), flattened.",
+      "properties": {
+        "possession_id": {
+          "type": "string"
+        },
+        "t0_ms": {
+          "type": "integer"
+        },
+        "hz": {
+          "type": "integer"
+        },
+        "pids": {
+          "items": {
+            "type": "integer"
+          },
+          "type": "array"
+        },
+        "xy": {
+          "items": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "possession_id",
+        "t0_ms",
+        "hz",
+        "pids",
+        "xy"
+      ],
+      "title": "PositionsChunk",
+      "type": "object"
+    },
+    "PositionsMessage": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "positions",
+          "default": "positions",
+          "type": "string"
+        },
+        "chunk": {
+          "$ref": "#/$defs/PositionsChunk"
+        }
+      },
+      "required": [
+        "chunk"
+      ],
+      "title": "PositionsMessage",
+      "type": "object"
+    },
+    "Possession": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "match_id": {
+          "type": "string"
+        },
+        "team": {
+          "enum": [
+            0,
+            1
+          ],
+          "type": "integer"
+        },
+        "start_ms": {
+          "type": "integer"
+        },
+        "end_ms": {
+          "type": "integer"
+        },
+        "outcome": {
+          "enum": [
+            "shot",
+            "goal",
+            "lost_tackle",
+            "lost_pass",
+            "out",
+            "stoppage"
+          ],
+          "type": "string"
+        },
+        "ended_zone": {
+          "enum": [
+            "own",
+            "mid",
+            "final"
+          ],
+          "type": "string"
+        },
+        "flagged": {
+          "type": "boolean"
+        },
+        "severity": {
+          "maximum": 1,
+          "minimum": 0,
+          "type": "number"
+        },
+        "turning_point_idx": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "provenance": {
+          "enum": [
+            "engine",
+            "fixture"
+          ],
+          "type": "string"
+        },
+        "start_frame": {
+          "type": "integer"
+        },
+        "end_frame": {
+          "type": "integer"
+        },
+        "danger_curve": {
+          "items": {
+            "$ref": "#/$defs/DangerPoint"
+          },
+          "type": "array"
+        },
+        "decisions": {
+          "items": {
+            "$ref": "#/$defs/Decision"
+          },
+          "type": "array"
+        },
+        "verdicts": {
+          "additionalProperties": {
+            "$ref": "#/$defs/Verdict"
+          },
+          "type": "object"
+        },
+        "facts": {
+          "additionalProperties": {
+            "$ref": "#/$defs/Fact"
+          },
+          "type": "object"
+        }
+      },
+      "required": [
+        "id",
+        "match_id",
+        "team",
+        "start_ms",
+        "end_ms",
+        "outcome",
+        "ended_zone",
+        "flagged",
+        "severity",
+        "turning_point_idx",
+        "provenance",
+        "start_frame",
+        "end_frame",
+        "danger_curve",
+        "decisions",
+        "verdicts",
+        "facts"
+      ],
+      "title": "Possession",
+      "type": "object"
+    },
+    "PossessionFlagged": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "possession_flagged",
+          "default": "possession_flagged",
+          "type": "string"
+        },
+        "summary": {
+          "$ref": "#/$defs/PossessionSummary"
+        },
+        "narrative": {
+          "$ref": "#/$defs/Narrative"
+        }
+      },
+      "required": [
+        "summary",
+        "narrative"
+      ],
+      "title": "PossessionFlagged",
+      "type": "object"
+    },
+    "PossessionSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "match_id": {
+          "type": "string"
+        },
+        "team": {
+          "enum": [
+            0,
+            1
+          ],
+          "type": "integer"
+        },
+        "start_ms": {
+          "type": "integer"
+        },
+        "end_ms": {
+          "type": "integer"
+        },
+        "outcome": {
+          "enum": [
+            "shot",
+            "goal",
+            "lost_tackle",
+            "lost_pass",
+            "out",
+            "stoppage"
+          ],
+          "type": "string"
+        },
+        "ended_zone": {
+          "enum": [
+            "own",
+            "mid",
+            "final"
+          ],
+          "type": "string"
+        },
+        "flagged": {
+          "type": "boolean"
+        },
+        "severity": {
+          "maximum": 1,
+          "minimum": 0,
+          "type": "number"
+        },
+        "turning_point_idx": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "provenance": {
+          "enum": [
+            "engine",
+            "fixture"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "match_id",
+        "team",
+        "start_ms",
+        "end_ms",
+        "outcome",
+        "ended_zone",
+        "flagged",
+        "severity",
+        "turning_point_idx",
+        "provenance"
+      ],
+      "title": "PossessionSummary",
+      "type": "object"
+    },
+    "ServerMessage": {
+      "discriminator": {
+        "mapping": {
+          "clock": "#/$defs/Clock",
+          "error": "#/$defs/ErrorMessage",
+          "match_end": "#/$defs/MatchEnd",
+          "narrative": "#/$defs/NarrativeReady",
+          "positions": "#/$defs/PositionsMessage",
+          "possession_flagged": "#/$defs/PossessionFlagged"
+        },
+        "propertyName": "type"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/Clock"
+        },
+        {
+          "$ref": "#/$defs/PositionsMessage"
+        },
+        {
+          "$ref": "#/$defs/PossessionFlagged"
+        },
+        {
+          "$ref": "#/$defs/NarrativeReady"
+        },
+        {
+          "$ref": "#/$defs/MatchEnd"
+        },
+        {
+          "$ref": "#/$defs/ErrorMessage"
+        }
+      ],
+      "title": "ServerMessage"
+    },
+    "Sliders": {
+      "additionalProperties": false,
+      "properties": {
+        "risk_tolerance": {
+          "maximum": 1,
+          "minimum": 0,
+          "type": "number"
+        },
+        "verticality": {
+          "maximum": 1,
+          "minimum": 0,
+          "type": "number"
+        },
+        "press_trigger": {
+          "maximum": 1,
+          "minimum": 0,
+          "type": "number"
+        },
+        "line_height": {
+          "maximum": 1,
+          "minimum": 0,
+          "type": "number"
+        }
+      },
+      "required": [
+        "risk_tolerance",
+        "verticality",
+        "press_trigger",
+        "line_height"
+      ],
+      "title": "Sliders",
+      "type": "object"
+    },
+    "StyleConfig": {
+      "additionalProperties": false,
+      "description": "Option score = sum(weights[f] * option.factors[f]); linear so any verdict change can be attributed.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "with_ball": {
+          "enum": [
+            "possession",
+            "direct",
+            "counter"
+          ],
+          "type": "string"
+        },
+        "without_ball": {
+          "enum": [
+            "high_press",
+            "mid_block",
+            "low_block"
+          ],
+          "type": "string"
+        },
+        "sliders": {
+          "$ref": "#/$defs/Sliders"
+        },
+        "weights": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "propertyNames": {
+            "enum": [
+              "p_success",
+              "danger_gain",
+              "progression",
+              "receiver_space",
+              "lane_openness",
+              "switch_of_play"
+            ]
+          },
+          "type": "object"
+        },
+        "principles": {
+          "items": {
+            "$ref": "#/$defs/StylePrinciple"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "with_ball",
+        "without_ball",
+        "sliders",
+        "weights",
+        "principles"
+      ],
+      "title": "StyleConfig",
+      "type": "object"
+    },
+    "StylePrinciple": {
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "type": "string"
+        },
+        "factor": {
+          "enum": [
+            "p_success",
+            "danger_gain",
+            "progression",
+            "receiver_space",
+            "lane_openness",
+            "switch_of_play"
+          ],
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "text",
+        "factor",
+        "source"
+      ],
+      "title": "StylePrinciple",
+      "type": "object"
+    },
+    "Team": {
+      "additionalProperties": false,
+      "properties": {
+        "side": {
+          "enum": [
+            0,
+            1
+          ],
+          "type": "integer"
+        },
+        "key": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "attacks_towards_x": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "side",
+        "key",
+        "name",
+        "attacks_towards_x"
+      ],
+      "title": "Team",
+      "type": "object"
+    },
+    "Verdict": {
+      "additionalProperties": false,
+      "properties": {
+        "style_id": {
+          "type": "string"
+        },
+        "decision_idx": {
+          "type": "integer"
+        },
+        "best_option_id": {
+          "type": "string"
+        },
+        "chosen_option_id": {
+          "type": "string"
+        },
+        "better_available": {
+          "type": "boolean"
+        },
+        "margin": {
+          "type": "number"
+        },
+        "flip_reason": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FlipReason"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "style_id",
+        "decision_idx",
+        "best_option_id",
+        "chosen_option_id",
+        "better_available",
+        "margin"
+      ],
+      "title": "Verdict",
+      "type": "object"
+    }
+  },
+  "title": "FilmRoom contracts"
+}

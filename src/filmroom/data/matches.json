@@ -1,0 +1,6 @@
+{
+  "Match_2019_09_09_#001": { "mode": "human_vs_human", "video_offset_s": 4.4 },
+  "Match_2019_09_14_#001": { "mode": "human_vs_human", "video_offset_s": -0.5 },
+  "Match_2019_09_10_#001": { "mode": "human_vs_ai", "video_offset_s": 0.1 },
+  "Match_2019_09_12_#002": { "mode": "human_vs_ai", "video_offset_s": -0.5 }
+}

@@ -1,0 +1,1393 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "FilmRoom API",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/matches": {
+      "get": {
+        "summary": "Matches",
+        "operationId": "matches_matches_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MatchSummary"
+                  },
+                  "type": "array",
+                  "title": "Response Matches Matches Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/matches/{match_id}": {
+      "get": {
+        "summary": "Match",
+        "operationId": "match_matches__match_id__get",
+        "parameters": [
+          {
+            "name": "match_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Match Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Match"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/matches/{match_id}/possessions": {
+      "get": {
+        "summary": "Possessions",
+        "operationId": "possessions_matches__match_id__possessions_get",
+        "parameters": [
+          {
+            "name": "match_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Match Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PossessionSummary"
+                  },
+                  "title": "Response Possessions Matches  Match Id  Possessions Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/possessions/{possession_id}": {
+      "get": {
+        "summary": "Possession",
+        "operationId": "possession_possessions__possession_id__get",
+        "parameters": [
+          {
+            "name": "possession_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Possession Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Possession"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/possessions/{possession_id}/positions": {
+      "get": {
+        "summary": "Positions",
+        "operationId": "positions_possessions__possession_id__positions_get",
+        "parameters": [
+          {
+            "name": "possession_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Possession Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PositionsChunk"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/styles": {
+      "get": {
+        "summary": "Styles",
+        "operationId": "styles_styles_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/StyleConfig"
+                  },
+                  "type": "array",
+                  "title": "Response Styles Styles Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/possessions/{possession_id}/narrative": {
+      "get": {
+        "summary": "Narrative",
+        "operationId": "narrative_possessions__possession_id__narrative_get",
+        "parameters": [
+          {
+            "name": "possession_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Possession Id"
+            }
+          },
+          {
+            "name": "style",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Style"
+            }
+          },
+          {
+            "name": "audience",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "coach",
+                "player",
+                "fan"
+              ],
+              "type": "string",
+              "default": "coach",
+              "title": "Audience"
+            }
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "en",
+              "title": "Language"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Narrative"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Claim": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "better_option",
+              "turning_point",
+              "player_skill",
+              "style_principle"
+            ],
+            "title": "Type"
+          },
+          "ref": {
+            "type": "string",
+            "title": "Ref"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "type",
+          "ref"
+        ],
+        "title": "Claim"
+      },
+      "DangerPoint": {
+        "properties": {
+          "t_ms": {
+            "type": "integer",
+            "title": "T Ms"
+          },
+          "xt": {
+            "type": "number",
+            "title": "Xt"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "t_ms",
+          "xt"
+        ],
+        "title": "DangerPoint"
+      },
+      "Decision": {
+        "properties": {
+          "idx": {
+            "type": "integer",
+            "title": "Idx"
+          },
+          "frame": {
+            "type": "integer",
+            "title": "Frame"
+          },
+          "t_ms": {
+            "type": "integer",
+            "title": "T Ms"
+          },
+          "pid": {
+            "type": "integer",
+            "title": "Pid"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "pass",
+              "shot",
+              "carry"
+            ],
+            "title": "Kind"
+          },
+          "chosen_option_id": {
+            "type": "string",
+            "title": "Chosen Option Id"
+          },
+          "options": {
+            "items": {
+              "$ref": "#/components/schemas/Option"
+            },
+            "type": "array",
+            "title": "Options"
+          },
+          "is_turning_point": {
+            "type": "boolean",
+            "title": "Is Turning Point"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "idx",
+          "frame",
+          "t_ms",
+          "pid",
+          "kind",
+          "chosen_option_id",
+          "options",
+          "is_turning_point"
+        ],
+        "title": "Decision"
+      },
+      "Fact": {
+        "properties": {
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Value"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "prob",
+              "band",
+              "metres",
+              "xt",
+              "count",
+              "player",
+              "text"
+            ],
+            "title": "Kind"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "value",
+          "kind"
+        ],
+        "title": "Fact"
+      },
+      "FlipReason": {
+        "properties": {
+          "vs_style_id": {
+            "type": "string",
+            "title": "Vs Style Id"
+          },
+          "factor": {
+            "type": "string",
+            "enum": [
+              "p_success",
+              "danger_gain",
+              "progression",
+              "receiver_space",
+              "lane_openness",
+              "switch_of_play"
+            ],
+            "title": "Factor"
+          },
+          "contribution": {
+            "type": "number",
+            "title": "Contribution"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "vs_style_id",
+          "factor",
+          "contribution"
+        ],
+        "title": "FlipReason"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "Health": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "ok",
+            "title": "Status"
+          },
+          "contract_version": {
+            "type": "string",
+            "title": "Contract Version"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "fixtures",
+              "database"
+            ],
+            "title": "Source"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status",
+          "contract_version",
+          "source"
+        ],
+        "title": "Health"
+      },
+      "Match": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "mode": {
+            "type": "string",
+            "title": "Mode"
+          },
+          "duration_ms": {
+            "type": "integer",
+            "title": "Duration Ms"
+          },
+          "has_events": {
+            "type": "boolean",
+            "title": "Has Events"
+          },
+          "teams": {
+            "prefixItems": [
+              {
+                "$ref": "#/components/schemas/Team"
+              },
+              {
+                "$ref": "#/components/schemas/Team"
+              }
+            ],
+            "type": "array",
+            "maxItems": 2,
+            "minItems": 2,
+            "title": "Teams"
+          },
+          "players": {
+            "items": {
+              "$ref": "#/components/schemas/PlayerRef"
+            },
+            "type": "array",
+            "title": "Players"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "mode",
+          "duration_ms",
+          "has_events",
+          "teams",
+          "players"
+        ],
+        "title": "Match"
+      },
+      "MatchSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "mode": {
+            "type": "string",
+            "title": "Mode"
+          },
+          "duration_ms": {
+            "type": "integer",
+            "title": "Duration Ms"
+          },
+          "has_events": {
+            "type": "boolean",
+            "title": "Has Events"
+          },
+          "teams": {
+            "prefixItems": [
+              {
+                "$ref": "#/components/schemas/Team"
+              },
+              {
+                "$ref": "#/components/schemas/Team"
+              }
+            ],
+            "type": "array",
+            "maxItems": 2,
+            "minItems": 2,
+            "title": "Teams"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "mode",
+          "duration_ms",
+          "has_events",
+          "teams"
+        ],
+        "title": "MatchSummary"
+      },
+      "Narrative": {
+        "properties": {
+          "possession_id": {
+            "type": "string",
+            "title": "Possession Id"
+          },
+          "style_id": {
+            "type": "string",
+            "title": "Style Id"
+          },
+          "audience": {
+            "type": "string",
+            "enum": [
+              "coach",
+              "player",
+              "fan"
+            ],
+            "title": "Audience"
+          },
+          "language": {
+            "type": "string",
+            "pattern": "^[a-z]{2}(-[A-Z]{2})?$",
+            "title": "Language"
+          },
+          "template": {
+            "type": "string",
+            "title": "Template"
+          },
+          "claims": {
+            "items": {
+              "$ref": "#/components/schemas/Claim"
+            },
+            "type": "array",
+            "title": "Claims"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "template",
+              "pending",
+              "verified",
+              "failed"
+            ],
+            "title": "Status"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "possession_id",
+          "style_id",
+          "audience",
+          "language",
+          "template",
+          "claims",
+          "status"
+        ],
+        "title": "Narrative",
+        "description": "`template` holds {fact.id} slots; the client fills them from Possession.facts, so no number in a\nnarrative ever comes from the LLM."
+      },
+      "Option": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "pass",
+              "shot",
+              "carry"
+            ],
+            "title": "Kind"
+          },
+          "target_pid": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Pid"
+          },
+          "target_xy": {
+            "anyOf": [
+              {
+                "prefixItems": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "type": "array",
+                "maxItems": 2,
+                "minItems": 2
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Xy"
+          },
+          "p_success": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "P Success"
+          },
+          "p_success_band": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ],
+            "title": "P Success Band"
+          },
+          "danger_gain": {
+            "type": "number",
+            "title": "Danger Gain"
+          },
+          "factors": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "propertyNames": {
+              "enum": [
+                "p_success",
+                "danger_gain",
+                "progression",
+                "receiver_space",
+                "lane_openness",
+                "switch_of_play"
+              ]
+            },
+            "type": "object",
+            "title": "Factors"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "target_pid",
+          "target_xy",
+          "p_success",
+          "p_success_band",
+          "danger_gain",
+          "factors"
+        ],
+        "title": "Option"
+      },
+      "PlayerRef": {
+        "properties": {
+          "pid": {
+            "type": "integer",
+            "title": "Pid"
+          },
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "shirt": {
+            "type": "integer",
+            "title": "Shirt"
+          },
+          "team": {
+            "type": "integer",
+            "enum": [
+              0,
+              1
+            ],
+            "title": "Team"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "GK",
+              "OUT"
+            ],
+            "title": "Role"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "pid",
+          "key",
+          "name",
+          "shirt",
+          "team",
+          "role"
+        ],
+        "title": "PlayerRef"
+      },
+      "PositionsChunk": {
+        "properties": {
+          "possession_id": {
+            "type": "string",
+            "title": "Possession Id"
+          },
+          "t0_ms": {
+            "type": "integer",
+            "title": "T0 Ms"
+          },
+          "hz": {
+            "type": "integer",
+            "title": "Hz"
+          },
+          "pids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Pids"
+          },
+          "xy": {
+            "items": {
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": "array"
+            },
+            "type": "array",
+            "title": "Xy"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "possession_id",
+          "t0_ms",
+          "hz",
+          "pids",
+          "xy"
+        ],
+        "title": "PositionsChunk",
+        "description": "Samples at a fixed rate. Each row is [x, y] per entity in `pids` order (ball first), flattened."
+      },
+      "Possession": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "match_id": {
+            "type": "string",
+            "title": "Match Id"
+          },
+          "team": {
+            "type": "integer",
+            "enum": [
+              0,
+              1
+            ],
+            "title": "Team"
+          },
+          "start_ms": {
+            "type": "integer",
+            "title": "Start Ms"
+          },
+          "end_ms": {
+            "type": "integer",
+            "title": "End Ms"
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "shot",
+              "goal",
+              "lost_tackle",
+              "lost_pass",
+              "out",
+              "stoppage"
+            ],
+            "title": "Outcome"
+          },
+          "ended_zone": {
+            "type": "string",
+            "enum": [
+              "own",
+              "mid",
+              "final"
+            ],
+            "title": "Ended Zone"
+          },
+          "flagged": {
+            "type": "boolean",
+            "title": "Flagged"
+          },
+          "severity": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Severity"
+          },
+          "turning_point_idx": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Turning Point Idx"
+          },
+          "provenance": {
+            "type": "string",
+            "enum": [
+              "engine",
+              "fixture"
+            ],
+            "title": "Provenance"
+          },
+          "start_frame": {
+            "type": "integer",
+            "title": "Start Frame"
+          },
+          "end_frame": {
+            "type": "integer",
+            "title": "End Frame"
+          },
+          "danger_curve": {
+            "items": {
+              "$ref": "#/components/schemas/DangerPoint"
+            },
+            "type": "array",
+            "title": "Danger Curve"
+          },
+          "decisions": {
+            "items": {
+              "$ref": "#/components/schemas/Decision"
+            },
+            "type": "array",
+            "title": "Decisions"
+          },
+          "verdicts": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Verdict"
+            },
+            "type": "object",
+            "title": "Verdicts"
+          },
+          "facts": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Fact"
+            },
+            "type": "object",
+            "title": "Facts"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "match_id",
+          "team",
+          "start_ms",
+          "end_ms",
+          "outcome",
+          "ended_zone",
+          "flagged",
+          "severity",
+          "turning_point_idx",
+          "provenance",
+          "start_frame",
+          "end_frame",
+          "danger_curve",
+          "decisions",
+          "verdicts",
+          "facts"
+        ],
+        "title": "Possession"
+      },
+      "PossessionSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "match_id": {
+            "type": "string",
+            "title": "Match Id"
+          },
+          "team": {
+            "type": "integer",
+            "enum": [
+              0,
+              1
+            ],
+            "title": "Team"
+          },
+          "start_ms": {
+            "type": "integer",
+            "title": "Start Ms"
+          },
+          "end_ms": {
+            "type": "integer",
+            "title": "End Ms"
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "shot",
+              "goal",
+              "lost_tackle",
+              "lost_pass",
+              "out",
+              "stoppage"
+            ],
+            "title": "Outcome"
+          },
+          "ended_zone": {
+            "type": "string",
+            "enum": [
+              "own",
+              "mid",
+              "final"
+            ],
+            "title": "Ended Zone"
+          },
+          "flagged": {
+            "type": "boolean",
+            "title": "Flagged"
+          },
+          "severity": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Severity"
+          },
+          "turning_point_idx": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Turning Point Idx"
+          },
+          "provenance": {
+            "type": "string",
+            "enum": [
+              "engine",
+              "fixture"
+            ],
+            "title": "Provenance"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "match_id",
+          "team",
+          "start_ms",
+          "end_ms",
+          "outcome",
+          "ended_zone",
+          "flagged",
+          "severity",
+          "turning_point_idx",
+          "provenance"
+        ],
+        "title": "PossessionSummary"
+      },
+      "Sliders": {
+        "properties": {
+          "risk_tolerance": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Risk Tolerance"
+          },
+          "verticality": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Verticality"
+          },
+          "press_trigger": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Press Trigger"
+          },
+          "line_height": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Line Height"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "risk_tolerance",
+          "verticality",
+          "press_trigger",
+          "line_height"
+        ],
+        "title": "Sliders"
+      },
+      "StyleConfig": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "with_ball": {
+            "type": "string",
+            "enum": [
+              "possession",
+              "direct",
+              "counter"
+            ],
+            "title": "With Ball"
+          },
+          "without_ball": {
+            "type": "string",
+            "enum": [
+              "high_press",
+              "mid_block",
+              "low_block"
+            ],
+            "title": "Without Ball"
+          },
+          "sliders": {
+            "$ref": "#/components/schemas/Sliders"
+          },
+          "weights": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "propertyNames": {
+              "enum": [
+                "p_success",
+                "danger_gain",
+                "progression",
+                "receiver_space",
+                "lane_openness",
+                "switch_of_play"
+              ]
+            },
+            "type": "object",
+            "title": "Weights"
+          },
+          "principles": {
+            "items": {
+              "$ref": "#/components/schemas/StylePrinciple"
+            },
+            "type": "array",
+            "title": "Principles"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "with_ball",
+          "without_ball",
+          "sliders",
+          "weights",
+          "principles"
+        ],
+        "title": "StyleConfig",
+        "description": "Option score = sum(weights[f] * option.factors[f]); linear so any verdict change can be attributed."
+      },
+      "StylePrinciple": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "factor": {
+            "type": "string",
+            "enum": [
+              "p_success",
+              "danger_gain",
+              "progression",
+              "receiver_space",
+              "lane_openness",
+              "switch_of_play"
+            ],
+            "title": "Factor"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "text",
+          "factor",
+          "source"
+        ],
+        "title": "StylePrinciple"
+      },
+      "Team": {
+        "properties": {
+          "side": {
+            "type": "integer",
+            "enum": [
+              0,
+              1
+            ],
+            "title": "Side"
+          },
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "attacks_towards_x": {
+            "type": "number",
+            "title": "Attacks Towards X"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "side",
+          "key",
+          "name",
+          "attacks_towards_x"
+        ],
+        "title": "Team"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "Verdict": {
+        "properties": {
+          "style_id": {
+            "type": "string",
+            "title": "Style Id"
+          },
+          "decision_idx": {
+            "type": "integer",
+            "title": "Decision Idx"
+          },
+          "best_option_id": {
+            "type": "string",
+            "title": "Best Option Id"
+          },
+          "chosen_option_id": {
+            "type": "string",
+            "title": "Chosen Option Id"
+          },
+          "better_available": {
+            "type": "boolean",
+            "title": "Better Available"
+          },
+          "margin": {
+            "type": "number",
+            "title": "Margin"
+          },
+          "flip_reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FlipReason"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "style_id",
+          "decision_idx",
+          "best_option_id",
+          "chosen_option_id",
+          "better_available",
+          "margin"
+        ],
+        "title": "Verdict"
+      }
+    }
+  }
+}

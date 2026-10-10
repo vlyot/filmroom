@@ -1,0 +1,30 @@
+# Planning docs (local only)
+/prd.md
+/roadmap.md
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Local caches and anything derived from the SoccER data (no licence to redistribute)
+.cache/
+/fixtures/possessions/
+/fixtures/matches/
+/web/public/bundle/
+
+# Web
+node_modules/
+web/dist/
+
+# Playwright
+test-results/
+playwright-report/
+.playwright-mcp/
