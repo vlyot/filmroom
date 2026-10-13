@@ -61,6 +61,16 @@ def test_the_shot_option_is_worth_its_xg_and_succeeds_at_the_on_target_rate():
     assert shot.option.p_success == 0.5 and shot.option.target_xy == (110.0, 36.0)
 
 
+def test_a_shot_is_weighed_against_passes_only():
+    snap = _snapshot((95, 36), (80, 20), [(109, 36)])
+    kinds = [c.option.kind for c in candidate_options(snap, RawDecision(0, 1, "shot"), 0, _models(), "k")]
+    assert kinds == ["pass", "shot"]
+    passing = [
+        c.option.kind for c in candidate_options(snap, RawDecision(0, 1, "pass", True, 2), 0, _models(), "k")
+    ]
+    assert passing == ["pass", "carry"]
+
+
 def test_a_clear_chance_close_to_goal_is_the_best_option_under_every_preset():
     snap = _snapshot((104, 36), (90, 20), [(109, 36), (80, 60)])
     assert {_best(snap, style) for style in PRESETS} == {"d0.shot"}

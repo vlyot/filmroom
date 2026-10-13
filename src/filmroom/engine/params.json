@@ -1,4 +1,4 @@
 {
- "flag_threshold": 0.0246,
- "severity_scale": 0.1375
+ "flag_threshold": 0.0216,
+ "severity_scale": 0.1331
 }

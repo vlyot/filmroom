@@ -4,10 +4,11 @@ A pass is worth p * [k * xT(destination) - (1 - k) * the opponent's xT there] - 
 xT where it would be cut out, where k is the chance the receiver keeps the ball (the dribble model at the
 receiver's spot): a completed pass into pressure is still a poor pass. A dribble is judged where it goes, like
 a pass: k * xT(destination) - (1 - k) * the opponent's xT there, with k the dribble model at the destination;
-the chosen dribble goes where the player went, any other one 5 m towards goal. A shot is worth its xG. Danger
-gain is value minus xT where the ball is now. Style factors are fixed-scale transforms into [0, 1], so the
-browser can re-score offline with the same linear sum; the press factors are read at the spot the ball would
-be lost.
+the chosen dribble goes where the player went, any other one 5 m towards goal. A shot is worth its xG and is
+weighed against passes only: the dribble model learned from spells that mostly end in a pass and rates
+carrying on into the box as safe, which made "dribble on" beat most shots. Danger gain is value minus xT where
+the ball is now. Style factors are fixed-scale transforms into [0, 1], so the browser can re-score offline
+with the same linear sum; the press factors are read at the spot the ball would be lost.
 """
 
 from dataclasses import dataclass
@@ -143,8 +144,8 @@ class _Context:
 def candidate_options(
     snap: Snapshot, decision: RawDecision, idx: int, models: EngineModels, passer_key: str
 ) -> list[Candidate]:
-    """Passes to every teammate, one dribble and, at a shot, the shot. The chosen action is one of them; a
-    pass into space gets an option of its own."""
+    """Passes to every teammate, plus the shot at a shot decision or one dribble otherwise. The chosen action
+    is one of them; a pass into space gets an option of its own."""
     origin = snap.position(decision.pid)
     ctx = _Context(snap, origin, voronoi_control(snap))
     targets = [
@@ -160,9 +161,8 @@ def candidate_options(
         ctx.move(oid, "pass", pid, float(p), dest, (origin + dest) / 2, float(k))
         for (oid, pid, dest), p, k in zip(targets, p_pass, p_keep, strict=True)
     ]
+    if decision.kind == "shot":
+        return [*candidates, ctx.shot(f"d{idx}.shot", models)]
     carry_to = _carry_destination(snap, decision, origin)
     p_carry = float(models.carry_p(carry_features(snap, carry_to)[None, :])[0])
-    candidates.append(ctx.move(f"d{idx}.carry", "carry", None, p_carry, carry_to, carry_to))
-    if decision.kind == "shot":
-        candidates.append(ctx.shot(f"d{idx}.shot", models))
-    return candidates
+    return [*candidates, ctx.move(f"d{idx}.carry", "carry", None, p_carry, carry_to, carry_to)]
