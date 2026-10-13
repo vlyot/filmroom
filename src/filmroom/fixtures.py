@@ -12,7 +12,6 @@ import numpy as np
 from filmroom.api.store import FixturePossession
 from filmroom.contracts.models import (
     ActionKind,
-    Band,
     Claim,
     Contract,
     DangerPoint,
@@ -22,16 +21,15 @@ from filmroom.contracts.models import (
     Match,
     Narrative,
     Option,
-    PlayerRef,
-    PositionsChunk,
     Possession,
     StyleConfig,
-    Team,
     template_slots,
 )
 from filmroom.data.catalog import MatchData, match_slug
-from filmroom.data.positions import BALL_PID, downsample
+from filmroom.data.positions import BALL_PID, downsample, team_of
 from filmroom.data.textlog import PassComplete, PassStart, Shot
+from filmroom.engine.assemble import mmss, positions_chunk
+from filmroom.engine.pass_model import band
 from filmroom.eval.labels import LabelRecord
 from filmroom.eval.scoring import DecisionPoint, label_decision_idx
 from filmroom.style import verdict
@@ -61,43 +59,13 @@ class FixtureSpec(Contract):
     possessions: list[PossessionSpec]
 
 
-def band(p: float) -> Band:
-    return "high" if p >= 2 / 3 else "medium" if p >= 1 / 3 else "low"
-
-
-def _team(pid: int) -> int:
-    return 1 if pid > BALL_PID else 0
-
-
-def _mmss(ms: int) -> str:
-    return f"{ms // 60000:02d}:{ms // 1000 % 60:02d}"
-
-
-def build_match(md: MatchData) -> Match:
-    home, away = md.teams
-    return Match(
-        id=match_slug(md.info.id),
-        title=f"{home.name} v {away.name}",
-        mode=md.info.mode,
-        duration_ms=int(md.clock.ms[-1]),
-        has_events=md.has_events,
-        teams=tuple(
-            Team(side=t.side, key=t.key, name=t.name, attacks_towards_x=t.attacks_towards_x) for t in md.teams
-        ),
-        players=[
-            PlayerRef(pid=p.pid, key=p.key, name=p.name, shirt=p.shirt, team=p.team, role=p.role)
-            for p in md.players
-        ],
-    )
-
-
 def decision_points(md: MatchData, start: int, end: int, team: int) -> list[tuple[int, int, ActionKind]]:
     points: dict[int, tuple[int, ActionKind]] = {}
     last = end + DECISION_SLACK_FRAMES
     for e in md.events:
-        if isinstance(e, PassStart) and start <= e.frame <= last and _team(e.pid) == team:
+        if isinstance(e, PassStart) and start <= e.frame <= last and team_of(e.pid) == team:
             points[e.frame] = (e.pid, "pass")
-        elif isinstance(e, Shot) and start <= e.start_frame <= last and _team(e.pid) == team:
+        elif isinstance(e, Shot) and start <= e.start_frame <= last and team_of(e.pid) == team:
             points[e.start_frame] = (e.pid, "shot")
     return [(frame, pid, kind) for frame, (pid, kind) in sorted(points.items())]
 
@@ -124,7 +92,7 @@ def _option(oid: str, kind: ActionKind, target: int | None, xy, spec: OptionSpec
 
 def _nearest_teammate(md: MatchData, frame: int, pid: int, exclude: set[int]) -> int:
     origin = np.asarray(_position(md, frame, pid))
-    mates = [p.pid for p in md.players if p.team == _team(pid) and p.pid not in exclude | {pid}]
+    mates = [p.pid for p in md.players if p.team == team_of(pid) and p.pid not in exclude | {pid}]
     return min(mates, key=lambda m: float(np.linalg.norm(np.asarray(_position(md, frame, m)) - origin)))
 
 
@@ -136,7 +104,7 @@ def build_possession(
     templates: dict[str, str],
     styles: list[StyleConfig],
 ) -> FixturePossession:
-    team = _team(label.tp_pid)
+    team = team_of(label.tp_pid)
     points = decision_points(md, label.start_frame, label.end_frame, team)
     tp_idx = label_decision_idx(label, [DecisionPoint(f, p) for f, p, _ in points])
     if tp_idx is None:
@@ -179,7 +147,7 @@ def build_possession(
     possession_id = f"{match_slug(md.info.id)}-{label.start_frame}"
     facts = {
         "tp.player": Fact(value=md.player(tp.pid).name, kind="player"),
-        "tp.time": Fact(value=_mmss(tp.t_ms), kind="text"),
+        "tp.time": Fact(value=mmss(tp.t_ms), kind="text"),
         "chosen.p_success": Fact(value=spec.chosen.p_success, kind="prob"),
         "chosen.p_success_band": Fact(value=band(spec.chosen.p_success), kind="band"),
         "alt.player": Fact(value=md.player(label.better_pid).name, kind="player"),
@@ -222,13 +190,7 @@ def build_possession(
         verdicts={s.id: verdict(tp, s, styles[0]) for s in styles},
         facts=facts,
     )
-    positions = PositionsChunk(
-        possession_id=possession_id,
-        t0_ms=md.clock.ms_at(int(samples.frames[0])),
-        hz=10,
-        pids=[int(p) for p in samples.pids],
-        xy=[[None if np.isnan(v) else round(float(v), 2) for v in row.ravel()] for row in samples.xy],
-    )
+    positions = positions_chunk(md, possession_id, label.start_frame, label.end_frame)
     narratives = [
         Narrative(
             possession_id=possession_id,

@@ -5,7 +5,8 @@ modification time. The cache holds raw roster names; it is local-only and gitign
 """
 
 import json
-from dataclasses import asdict, dataclass
+from bisect import bisect_right
+from dataclasses import asdict, dataclass, replace
 from functools import cached_property
 from pathlib import Path
 
@@ -26,7 +27,7 @@ from filmroom.data.textlog import (
     read_roster,
 )
 
-LOADER_VERSION = 1
+LOADER_VERSION = 2
 MIN_EVENTS = 100  # below this the text log is treated as broken (09_13 #001 is truncated)
 ATTACKS_TOWARDS_X = {0: 110.0, 1: 0.0}
 METADATA = json.loads(Path(__file__).with_name("matches.json").read_text(encoding="utf-8"))
@@ -79,6 +80,24 @@ class MatchData:
     def player(self, pid: int) -> Player:
         return next(p for p in self.players if p.pid == pid)
 
+    def until(self, frame: int) -> "MatchData":
+        """The match as it stood at `frame`: nothing logged later is visible, which is what keeps live
+        analysis free of lookahead. Arrays are views, so this is cheap."""
+
+        def upto(frames: np.ndarray) -> int:
+            return int(np.searchsorted(frames, frame, side="right"))
+
+        n_track, n_clock = upto(self.track.frames), upto(self.clock.frames)
+        n_poss = upto(self.possession_frames)
+        return replace(
+            self,
+            clock=FrameClock(self.clock.frames[:n_clock], self.clock.ms[:n_clock]),
+            track=PositionTrack(self.track.frames[:n_track], self.track.pids, self.track.xy[:n_track]),
+            possession_frames=self.possession_frames[:n_poss],
+            possession_pids=self.possession_pids[:n_poss],
+            events=self.events[: bisect_right(self.events, frame, key=lambda e: e.frame)],
+        )
+
 
 def match_slug(match_id: str) -> str:
     """URL- and filename-safe ID: Match_2019_09_09_#001 -> 2019_09_09_001."""
@@ -105,6 +124,12 @@ class Catalog:
 
     def info(self, match_id: str) -> MatchInfo:
         return self._info(self.data_dir / match_id)
+
+    def by_slug(self, slug: str) -> MatchInfo:
+        for info in self.matches():
+            if match_slug(info.id) == slug:
+                return info
+        raise KeyError(f"not found: {slug}")
 
     def _info(self, match_dir: Path) -> MatchInfo:
         meta = METADATA.get(match_dir.name, {})

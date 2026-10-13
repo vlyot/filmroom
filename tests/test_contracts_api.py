@@ -90,6 +90,7 @@ def test_route_to_path_mirrors_routes():
 def test_full_bundle_files_equal_their_route_responses(mini_fixtures, tmp_path, client):
     manifest = export_bundle(FixtureStore(mini_fixtures), tmp_path / "bundle", public=False)
     assert any(f.endswith("/positions.json") for f in manifest.files)
+    assert {"styles.json", "styles/lens.json"} <= set(manifest.files)
     for rel in manifest.files:
         route = "/" + rel.removesuffix(".json")
         if "/narrative/" in rel:

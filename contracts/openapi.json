@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "FilmRoom API",
-    "version": "0.1.0"
+    "version": "0.3.0"
   },
   "paths": {
     "/health": {
@@ -220,6 +220,168 @@
                   },
                   "type": "array",
                   "title": "Response Styles Styles Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/styles/lens": {
+      "get": {
+        "summary": "Lens",
+        "operationId": "lens_styles_lens_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StyleLens"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/possessions/{possession_id}/verdict": {
+      "get": {
+        "summary": "Possession Verdict",
+        "description": "The turning-point verdict under a preset (`style`) or custom sliders (all four), with the flip\nreason measured against `vs` (the reference preset by default).",
+        "operationId": "possession_verdict_possessions__possession_id__verdict_get",
+        "parameters": [
+          {
+            "name": "possession_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Possession Id"
+            }
+          },
+          {
+            "name": "style",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Style"
+            }
+          },
+          {
+            "name": "vs",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Vs"
+            }
+          },
+          {
+            "name": "risk_tolerance",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 1,
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Risk Tolerance"
+            }
+          },
+          {
+            "name": "verticality",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 1,
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Verticality"
+            }
+          },
+          {
+            "name": "press_trigger",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 1,
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Press Trigger"
+            }
+          },
+          {
+            "name": "line_height",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 1,
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Line Height"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Verdict"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -464,7 +626,9 @@
               "progression",
               "receiver_space",
               "lane_openness",
-              "switch_of_play"
+              "switch_of_play",
+              "counter_press",
+              "rest_defence"
             ],
             "title": "Factor"
           },
@@ -510,6 +674,7 @@
             "type": "string",
             "enum": [
               "fixtures",
+              "engine",
               "database"
             ],
             "title": "Source"
@@ -778,7 +943,9 @@
                 "progression",
                 "receiver_space",
                 "lane_openness",
-                "switch_of_play"
+                "switch_of_play",
+                "counter_press",
+                "rest_defence"
               ]
             },
             "type": "object",
@@ -1127,6 +1294,127 @@
         ],
         "title": "PossessionSummary"
       },
+      "RuleSet": {
+        "properties": {
+          "axis": {
+            "type": "string",
+            "enum": [
+              "with_ball",
+              "without_ball"
+            ],
+            "title": "Axis"
+          },
+          "id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "possession",
+                  "direct",
+                  "counter"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "high_press",
+                  "mid_block",
+                  "low_block"
+                ]
+              }
+            ],
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "sliders": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "propertyNames": {
+              "enum": [
+                "risk_tolerance",
+                "verticality",
+                "press_trigger",
+                "line_height"
+              ]
+            },
+            "type": "object",
+            "title": "Sliders"
+          },
+          "principles": {
+            "items": {
+              "$ref": "#/components/schemas/StylePrinciple"
+            },
+            "type": "array",
+            "title": "Principles"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "axis",
+          "id",
+          "name",
+          "sliders",
+          "principles"
+        ],
+        "title": "RuleSet",
+        "description": "One side of a style: its slider positions and the principles behind them."
+      },
+      "SliderSpec": {
+        "properties": {
+          "slider": {
+            "type": "string",
+            "enum": [
+              "risk_tolerance",
+              "verticality",
+              "press_trigger",
+              "line_height"
+            ],
+            "title": "Slider"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "statement": {
+            "type": "string",
+            "title": "Statement"
+          },
+          "gains": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "propertyNames": {
+              "enum": [
+                "p_success",
+                "danger_gain",
+                "progression",
+                "receiver_space",
+                "lane_openness",
+                "switch_of_play",
+                "counter_press",
+                "rest_defence"
+              ]
+            },
+            "type": "object",
+            "title": "Gains"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "slider",
+          "label",
+          "statement",
+          "gains"
+        ],
+        "title": "SliderSpec",
+        "description": "What one slider does: weights[f] += gains[f] * (slider - 0.5). Each factor has at most one slider, so a\nflip attributed to a factor names the slider behind it."
+      },
       "Sliders": {
         "properties": {
           "risk_tolerance": {
@@ -1206,7 +1494,9 @@
                 "progression",
                 "receiver_space",
                 "lane_openness",
-                "switch_of_play"
+                "switch_of_play",
+                "counter_press",
+                "rest_defence"
               ]
             },
             "type": "object",
@@ -1232,7 +1522,58 @@
           "principles"
         ],
         "title": "StyleConfig",
-        "description": "Option score = sum(weights[f] * option.factors[f]); linear so any verdict change can be attributed."
+        "description": "Option score = sum(weights[f] * option.factors[f]); linear so any verdict change can be attributed.\nWeights are derived from the sliders by the StyleLens."
+      },
+      "StyleLens": {
+        "properties": {
+          "reference_style_id": {
+            "type": "string",
+            "title": "Reference Style Id"
+          },
+          "base": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "propertyNames": {
+              "enum": [
+                "p_success",
+                "danger_gain",
+                "progression",
+                "receiver_space",
+                "lane_openness",
+                "switch_of_play",
+                "counter_press",
+                "rest_defence"
+              ]
+            },
+            "type": "object",
+            "title": "Base"
+          },
+          "sliders": {
+            "items": {
+              "$ref": "#/components/schemas/SliderSpec"
+            },
+            "type": "array",
+            "title": "Sliders"
+          },
+          "rule_sets": {
+            "items": {
+              "$ref": "#/components/schemas/RuleSet"
+            },
+            "type": "array",
+            "title": "Rule Sets"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "reference_style_id",
+          "base",
+          "sliders",
+          "rule_sets"
+        ],
+        "title": "StyleLens",
+        "description": "Everything needed to build any style from sliders, as the API does: weights = base + the sum over\nsliders of gains * (slider - 0.5). Presets are rule-set pairs; flip reasons are measured against the\nreference."
       },
       "StylePrinciple": {
         "properties": {
@@ -1248,7 +1589,9 @@
               "progression",
               "receiver_space",
               "lane_openness",
-              "switch_of_play"
+              "switch_of_play",
+              "counter_press",
+              "rest_defence"
             ],
             "title": "Factor"
           },

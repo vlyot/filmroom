@@ -22,6 +22,7 @@ from filmroom.contracts.models import (
     Possession,
     PossessionSummary,
     StyleConfig,
+    StyleLens,
 )
 from filmroom.contracts.ws import ClientMessage, ServerMessage
 
@@ -33,6 +34,7 @@ MODELS = [
     Possession,
     PositionsChunk,
     StyleConfig,
+    StyleLens,
     Narrative,
     OverlayEvent,
     BundleManifest,

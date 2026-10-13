@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -11,4 +12,5 @@ class Settings(BaseSettings):
     holdout_path: Path | None = None
     cache_dir: Path = Path(".cache")
     fixtures_dir: Path = Path("fixtures")
+    store: Literal["fixtures", "engine"] = "fixtures"
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]

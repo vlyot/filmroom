@@ -3,13 +3,12 @@
 Usage: uv run python scripts/build_fixtures.py
 """
 
-from pydantic import TypeAdapter
-
 from filmroom.config import Settings
-from filmroom.contracts.models import StyleConfig
 from filmroom.data.catalog import Catalog
+from filmroom.engine.assemble import match_view
 from filmroom.eval.labels import load_labels
-from filmroom.fixtures import FixtureSpec, build_match, build_possession, write_fixtures
+from filmroom.fixtures import FixtureSpec, build_possession, write_fixtures
+from filmroom.style import load_lens, presets
 
 
 def main() -> None:
@@ -17,14 +16,14 @@ def main() -> None:
     catalog = Catalog(settings)
     root = settings.fixtures_dir
     spec = FixtureSpec.model_validate_json((root / "fixture_spec.json").read_bytes())
-    styles = TypeAdapter(list[StyleConfig]).validate_json((root / "styles.json").read_bytes())
+    styles = presets(load_lens())
     labels = {r.id: r for r in load_labels(settings.labels_path, "tuning", lambda m: catalog.load(m).clock)}
 
     matches, fixtures = {}, []
     for ps in spec.possessions:
         label = labels[ps.label_id]
         md = catalog.load(label.match_id)
-        matches.setdefault(label.match_id, build_match(md))
+        matches.setdefault(label.match_id, match_view(md))
         fixtures.append(build_possession(label, md, ps, spec.routine, spec.narratives, styles))
     write_fixtures(root, list(matches.values()), fixtures)
     for f in fixtures:

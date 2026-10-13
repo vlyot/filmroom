@@ -33,7 +33,11 @@ def _strip_coordinates(possession: dict) -> dict:
 
 def export_bundle(store: FixtureStore, out_dir: Path, public: bool) -> BundleManifest:
     client = TestClient(create_app(store, cors_origins=[]))
-    requests: list[tuple[str, dict[str, str] | None]] = [("/matches", None), ("/styles", None)]
+    requests: list[tuple[str, dict[str, str] | None]] = [
+        ("/matches", None),
+        ("/styles", None),
+        ("/styles/lens", None),
+    ]
     for match in store.matches():
         requests += [(f"/matches/{match.id}", None), (f"/matches/{match.id}/possessions", None)]
     for fixture in store.all_fixtures():

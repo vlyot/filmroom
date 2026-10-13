@@ -9,7 +9,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-CONTRACT_VERSION = "0.1.0"
+CONTRACT_VERSION = "0.3.0"
 
 Side = Literal[0, 1]
 Band = Literal["low", "medium", "high"]
@@ -22,7 +22,12 @@ FactorName = Literal[
     "receiver_space",
     "lane_openness",
     "switch_of_play",
+    "counter_press",
+    "rest_defence",
 ]
+SliderName = Literal["risk_tolerance", "verticality", "press_trigger", "line_height"]
+WithBall = Literal["possession", "direct", "counter"]
+WithoutBall = Literal["high_press", "mid_block", "low_block"]
 SLOT = re.compile(r"\{([a-z0-9_.]+)\}")
 
 
@@ -155,15 +160,47 @@ class StylePrinciple(Contract):
 
 
 class StyleConfig(Contract):
-    """Option score = sum(weights[f] * option.factors[f]); linear so any verdict change can be attributed."""
+    """Option score = sum(weights[f] * option.factors[f]); linear so any verdict change can be attributed.
+    Weights are derived from the sliders by the StyleLens."""
 
     id: str
     name: str
-    with_ball: Literal["possession", "direct", "counter"]
-    without_ball: Literal["high_press", "mid_block", "low_block"]
+    with_ball: WithBall
+    without_ball: WithoutBall
     sliders: Sliders
     weights: dict[FactorName, float]
     principles: list[StylePrinciple]
+
+
+class SliderSpec(Contract):
+    """What one slider does: weights[f] += gains[f] * (slider - 0.5). Each factor has at most one slider, so a
+    flip attributed to a factor names the slider behind it."""
+
+    slider: SliderName
+    label: str
+    statement: str
+    gains: dict[FactorName, float]
+
+
+class RuleSet(Contract):
+    """One side of a style: its slider positions and the principles behind them."""
+
+    axis: Literal["with_ball", "without_ball"]
+    id: WithBall | WithoutBall
+    name: str
+    sliders: dict[SliderName, float]
+    principles: list[StylePrinciple]
+
+
+class StyleLens(Contract):
+    """Everything needed to build any style from sliders, as the API does: weights = base + the sum over
+    sliders of gains * (slider - 0.5). Presets are rule-set pairs; flip reasons are measured against the
+    reference."""
+
+    reference_style_id: str
+    base: dict[FactorName, float]
+    sliders: list[SliderSpec]
+    rule_sets: list[RuleSet]
 
 
 class Claim(Contract):
@@ -197,7 +234,7 @@ class OverlayEvent(Contract):
 class Health(Contract):
     status: Literal["ok"]
     contract_version: str
-    source: Literal["fixtures", "database"]
+    source: Literal["fixtures", "engine", "database"]
 
 
 class BundleManifest(Contract):

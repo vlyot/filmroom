@@ -4,8 +4,6 @@ replaces it in Phase 5. Lookups that find nothing raise KeyError, which the API 
 from pathlib import Path
 from typing import Protocol
 
-from pydantic import TypeAdapter
-
 from filmroom.contracts.models import (
     Audience,
     Contract,
@@ -15,7 +13,6 @@ from filmroom.contracts.models import (
     PositionsChunk,
     Possession,
     PossessionSummary,
-    StyleConfig,
 )
 
 
@@ -34,7 +31,6 @@ class Store(Protocol):
     def possessions(self, match_id: str) -> list[PossessionSummary]: ...
     def possession(self, possession_id: str) -> Possession: ...
     def positions(self, possession_id: str) -> PositionsChunk: ...
-    def styles(self) -> list[StyleConfig]: ...
     def narrative(self, possession_id: str, style: str, audience: Audience, language: str) -> Narrative: ...
 
 
@@ -79,9 +75,6 @@ class FixtureStore:
 
     def positions(self, possession_id: str) -> PositionsChunk:
         return self.fixture(possession_id).positions
-
-    def styles(self) -> list[StyleConfig]:
-        return TypeAdapter(list[StyleConfig]).validate_json((self.root / "styles.json").read_bytes())
 
     def narrative(self, possession_id: str, style: str, audience: Audience, language: str) -> Narrative:
         for n in self.fixture(possession_id).narratives:

@@ -9,6 +9,10 @@ from filmroom.data.frame_times import FrameClock
 BALL_PID = 128
 
 
+def team_of(pid: int) -> int:
+    return 1 if pid > BALL_PID else 0
+
+
 @dataclass(frozen=True)
 class PositionTrack:
     frames: np.ndarray  # (n,) int32

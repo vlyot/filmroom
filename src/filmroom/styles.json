@@ -1,0 +1,114 @@
+{
+  "base": {
+    "p_success": 0.7,
+    "danger_gain": 0.9,
+    "progression": 0.5,
+    "receiver_space": 0.4,
+    "lane_openness": 0.3,
+    "switch_of_play": 0.25,
+    "counter_press": 0.2,
+    "rest_defence": 0.5
+  },
+  "sliders": [
+    {
+      "slider": "risk_tolerance",
+      "label": "Risk tolerance",
+      "statement": "Higher risk tolerance weights threat up and success odds down: as it rises, an option with more danger gain and no better odds never drops below one with less.",
+      "gains": { "p_success": -1.0, "danger_gain": 1.0 }
+    },
+    {
+      "slider": "verticality",
+      "label": "Verticality",
+      "statement": "Higher verticality weights ground gained up and switches of play down: as it rises, an option that gains more ground and switches play no more never drops below one that gains less.",
+      "gains": { "progression": 0.9, "switch_of_play": -0.5 }
+    },
+    {
+      "slider": "press_trigger",
+      "label": "Press trigger",
+      "statement": "A higher press trigger weights counter-press cover up: as it rises, an option with more teammates near where the ball could be lost never drops below one with fewer, all else equal.",
+      "gains": { "counter_press": 0.4 }
+    },
+    {
+      "slider": "line_height",
+      "label": "Defensive line height",
+      "statement": "A higher line weights rest defence up: as it rises, an option that leaves more of the space behind it covered never drops below one that leaves less, all else equal.",
+      "gains": { "rest_defence": 1.0 }
+    }
+  ],
+  "rule_sets": [
+    {
+      "axis": "with_ball",
+      "id": "possession",
+      "name": "Possession",
+      "sliders": { "risk_tolerance": 0.2, "verticality": 0.2 },
+      "principles": [
+        { "text": "Keep the ball: when the gain is close, take the pass most likely to arrive", "factor": "p_success", "source": "Positional play (juego de posición)" },
+        { "text": "Don't force the final ball; wait for the opening to appear", "factor": "danger_gain", "source": "Positional play (juego de posición)" },
+        { "text": "Move up the pitch through patient circulation rather than early balls forward", "factor": "progression", "source": "Positional play (juego de posición)" },
+        { "text": "Draw the opponent to one side, then switch to the free side", "factor": "switch_of_play", "source": "Positional play (juego de posición)" }
+      ]
+    },
+    {
+      "axis": "with_ball",
+      "id": "direct",
+      "name": "Direct",
+      "sliders": { "risk_tolerance": 0.55, "verticality": 0.9 },
+      "principles": [
+        { "text": "Get the ball forward in few passes", "factor": "progression", "source": "Direct play; C. Reep and B. Benjamin, \"Skill and Chance in Association Football\", JRSS A 131 (1968)" },
+        { "text": "Go forward rather than across", "factor": "switch_of_play", "source": "Direct play" },
+        { "text": "Accept losing some balls in exchange for territory", "factor": "p_success", "source": "Direct play" },
+        { "text": "Get the ball into the areas chances come from", "factor": "danger_gain", "source": "Direct play" }
+      ]
+    },
+    {
+      "axis": "with_ball",
+      "id": "counter",
+      "name": "Counter",
+      "sliders": { "risk_tolerance": 0.85, "verticality": 0.75 },
+      "principles": [
+        { "text": "Go for goal straight after winning the ball, before the defence is set", "factor": "danger_gain", "source": "Rangnick: the best time to score is within 10 seconds of winning the ball (The Athletic, 2021)" },
+        { "text": "Accept lower odds for a bigger threat while the opponent is disorganised", "factor": "p_success", "source": "Counter-attacking play" },
+        { "text": "Play forward into the space behind the opponent", "factor": "progression", "source": "Counter-attacking play" },
+        { "text": "Attack the space directly instead of switching play", "factor": "switch_of_play", "source": "Counter-attacking play" }
+      ]
+    },
+    {
+      "axis": "without_ball",
+      "id": "high_press",
+      "name": "High Press",
+      "sliders": { "press_trigger": 0.9, "line_height": 0.85 },
+      "principles": [
+        { "text": "Win the ball back within seconds of losing it, so keep players close to where it could be lost", "factor": "counter_press", "source": "Counter-pressing: Guardiola's Barcelona (2008-12), five-to-six-second rule; Rangnick's eight-second rule" },
+        { "text": "A high line leaves space behind it, so keep cover behind the ball in case the move breaks down", "factor": "rest_defence", "source": "Rest defence (Restverteidigung)" }
+      ]
+    },
+    {
+      "axis": "without_ball",
+      "id": "mid_block",
+      "name": "Mid-Block",
+      "sliders": { "press_trigger": 0.5, "line_height": 0.5 },
+      "principles": [
+        { "text": "Press straight away only when teammates are close to the loss; otherwise regroup", "factor": "counter_press", "source": "Defending in a mid-block" },
+        { "text": "Keep a balanced shape behind the ball", "factor": "rest_defence", "source": "Rest defence (Restverteidigung)" }
+      ]
+    },
+    {
+      "axis": "without_ball",
+      "id": "low_block",
+      "name": "Low Block",
+      "sliders": { "press_trigger": 0.15, "line_height": 0.15 },
+      "principles": [
+        { "text": "Drop into shape after losing the ball rather than pressing it", "factor": "counter_press", "source": "Defending in a low block" },
+        { "text": "A deep line leaves little space behind it, so a turnover in front of it costs less", "factor": "rest_defence", "source": "Defending in a low block" }
+      ]
+    }
+  ],
+  "presets": [
+    { "id": "possession-high-press", "name": "Possession + High Press", "with_ball": "possession", "without_ball": "high_press" },
+    { "id": "possession-mid-block", "name": "Possession + Mid-Block", "with_ball": "possession", "without_ball": "mid_block" },
+    { "id": "direct-mid-block", "name": "Direct + Mid-Block", "with_ball": "direct", "without_ball": "mid_block" },
+    { "id": "direct-low-block", "name": "Direct + Low Block", "with_ball": "direct", "without_ball": "low_block" },
+    { "id": "counter-high-press", "name": "Counter + High Press", "with_ball": "counter", "without_ball": "high_press" },
+    { "id": "counter-low-block", "name": "Counter + Low Block", "with_ball": "counter", "without_ball": "low_block" }
+  ]
+}

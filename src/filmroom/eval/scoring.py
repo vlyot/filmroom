@@ -41,14 +41,16 @@ def wilson_ci(k: float, n: int, z: float = 1.96) -> tuple[float, float]:
 
 
 def label_decision_idx(label: LabelRecord, decisions: list[DecisionPoint]) -> int | None:
-    if label.tp_frame is None or not decisions:
+    """The labelled player's nearest decision within the tolerance, else the nearest decision by anyone.
+    Labels are timed to the whole second but name the player, so the player is the stronger signal."""
+    if label.tp_frame is None:
         return None
-    ranked = sorted(
-        range(len(decisions)),
-        key=lambda i: (abs(decisions[i].frame - label.tp_frame), decisions[i].pid != label.tp_pid),
+    in_range = [i for i, d in enumerate(decisions) if abs(d.frame - label.tp_frame) <= TOLERANCE_FRAMES]
+    if not in_range:
+        return None
+    return min(
+        in_range, key=lambda i: (decisions[i].pid != label.tp_pid, abs(decisions[i].frame - label.tp_frame))
     )
-    best = ranked[0]
-    return best if abs(decisions[best].frame - label.tp_frame) <= TOLERANCE_FRAMES else None
 
 
 def score(method: str, predictions: dict[str, int | None], truth: dict[str, int | None]) -> Score:

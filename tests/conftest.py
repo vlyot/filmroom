@@ -90,22 +90,19 @@ def mini_settings(mini_root: Path, tmp_path: Path) -> Settings:
 @pytest.fixture
 def mini_fixtures(mini_settings: Settings, tmp_path: Path) -> Path:
     """A fixture set built from the synthetic mini match, so API and bundle tests run without real data."""
-    from pydantic import TypeAdapter
-
-    from filmroom.contracts.models import StyleConfig
     from filmroom.data.catalog import Catalog
+    from filmroom.engine.assemble import match_view
     from filmroom.eval.labels import LabelRecord
-    from filmroom.fixtures import FixtureSpec, build_match, build_possession, write_fixtures
+    from filmroom.fixtures import FixtureSpec, build_possession, write_fixtures
+    from filmroom.style import load_lens, presets
 
     spec = FixtureSpec.model_validate_json((REPO / "fixtures" / "fixture_spec.json").read_bytes())
-    styles_json = (REPO / "fixtures" / "styles.json").read_bytes()
-    styles = TypeAdapter(list[StyleConfig]).validate_json(styles_json)
+    styles = presets(load_lens())
     md = Catalog(mini_settings).load(MINI_MATCH)
     label = LabelRecord("T01", "tuning", MINI_MATCH, 1, 20, None, 11, 9, 7, True, 3)
     fixture = build_possession(label, md, spec.possessions[0], spec.routine, spec.narratives, styles)
     out = tmp_path / "fixtures"
-    write_fixtures(out, [build_match(md)], [fixture])
-    (out / "styles.json").write_bytes(styles_json)
+    write_fixtures(out, [match_view(md)], [fixture])
     return out
 
 

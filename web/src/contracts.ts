@@ -133,6 +133,8 @@ export interface FlipReason {
     | "receiver_space"
     | "lane_openness"
     | "switch_of_play"
+    | "counter_press"
+    | "rest_defence"
   contribution: number
 }
 /**
@@ -142,7 +144,7 @@ export interface FlipReason {
 export interface Health {
   status: "ok"
   contract_version: string
-  source: "fixtures" | "database"
+  source: "fixtures" | "engine" | "database"
 }
 /**
  * This interface was referenced by `FilmRoomContracts`'s JSON-Schema
@@ -333,28 +335,18 @@ export interface PossessionSummary {
   provenance: "engine" | "fixture"
 }
 /**
- * This interface was referenced by `FilmRoomContracts`'s JSON-Schema
- * via the `definition` "Sliders".
- */
-export interface Sliders {
-  risk_tolerance: number
-  verticality: number
-  press_trigger: number
-  line_height: number
-}
-/**
- * Option score = sum(weights[f] * option.factors[f]); linear so any verdict change can be attributed.
+ * One side of a style: its slider positions and the principles behind them.
  *
  * This interface was referenced by `FilmRoomContracts`'s JSON-Schema
- * via the `definition` "StyleConfig".
+ * via the `definition` "RuleSet".
  */
-export interface StyleConfig {
-  id: string
+export interface RuleSet {
+  axis: "with_ball" | "without_ball"
+  id:
+    | ("possession" | "direct" | "counter")
+    | ("high_press" | "mid_block" | "low_block")
   name: string
-  with_ball: "possession" | "direct" | "counter"
-  without_ball: "high_press" | "mid_block" | "low_block"
-  sliders: Sliders
-  weights: {
+  sliders: {
     [k: string]: number
   }
   principles: StylePrinciple[]
@@ -372,5 +364,66 @@ export interface StylePrinciple {
     | "receiver_space"
     | "lane_openness"
     | "switch_of_play"
+    | "counter_press"
+    | "rest_defence"
   source: string
+}
+/**
+ * What one slider does: weights[f] += gains[f] * (slider - 0.5). Each factor has at most one slider, so a
+ * flip attributed to a factor names the slider behind it.
+ *
+ * This interface was referenced by `FilmRoomContracts`'s JSON-Schema
+ * via the `definition` "SliderSpec".
+ */
+export interface SliderSpec {
+  slider: "risk_tolerance" | "verticality" | "press_trigger" | "line_height"
+  label: string
+  statement: string
+  gains: {
+    [k: string]: number
+  }
+}
+/**
+ * This interface was referenced by `FilmRoomContracts`'s JSON-Schema
+ * via the `definition` "Sliders".
+ */
+export interface Sliders {
+  risk_tolerance: number
+  verticality: number
+  press_trigger: number
+  line_height: number
+}
+/**
+ * Option score = sum(weights[f] * option.factors[f]); linear so any verdict change can be attributed.
+ * Weights are derived from the sliders by the StyleLens.
+ *
+ * This interface was referenced by `FilmRoomContracts`'s JSON-Schema
+ * via the `definition` "StyleConfig".
+ */
+export interface StyleConfig {
+  id: string
+  name: string
+  with_ball: "possession" | "direct" | "counter"
+  without_ball: "high_press" | "mid_block" | "low_block"
+  sliders: Sliders
+  weights: {
+    [k: string]: number
+  }
+  principles: StylePrinciple[]
+}
+/**
+ * Everything needed to build any style from sliders, as the API does: weights = base + the sum over
+ * sliders of gains * (slider - 0.5). Presets are rule-set pairs; flip reasons are measured against the
+ * reference.
+ *
+ * This interface was referenced by `FilmRoomContracts`'s JSON-Schema
+ * via the `definition` "StyleLens".
+ */
+export interface StyleLens {
+  reference_style_id: string
+  base: {
+    [k: string]: number
+  }
+  sliders: SliderSpec[]
+  rule_sets: RuleSet[]
 }

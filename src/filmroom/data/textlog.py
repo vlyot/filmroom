@@ -230,11 +230,9 @@ def parse_textlog(path: Path) -> TextLog:
                     )
                 )
             elif what == "cross":
-                team = _num(p[5])
+                # A failed cross names the opponent who won it; take the receiver's team from the roster.
                 success = p[6].split(":", 1)[1].strip() == "riuscito"
-                events.append(
-                    Cross(frame, start, to_pid(_num(p[3]), team), to_pid(_num(p[4]), team), success)
-                )
+                events.append(Cross(frame, start, to_pid(_num(p[3]), _num(p[5])), pid(_num(p[4])), success))
             elif what == "complete shot (no goal)":
                 shooter = to_pid(_num(p[3]), _num(p[4]))
                 shots.setdefault((start, shooter), Shot(frame, start, shooter, "off_target"))

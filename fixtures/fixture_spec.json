@@ -2,7 +2,7 @@
   "routine": {
     "p_success": 0.85,
     "danger_gain": 0.01,
-    "factors": { "p_success": 0.85, "danger_gain": 0.1, "progression": 0.2, "receiver_space": 0.5, "lane_openness": 0.6, "switch_of_play": 0.1 }
+    "factors": { "p_success": 0.85, "danger_gain": 0.1, "progression": 0.2, "receiver_space": 0.5, "lane_openness": 0.6, "switch_of_play": 0.1, "counter_press": 0.67, "rest_defence": 0.6 }
   },
   "narratives": {
     "coach.en": "At {tp.time}, {tp.player} took an option with {chosen.p_success_band} odds of success. {alt.player} was available: a {alt.p_success_band}-probability pass adding {alt.danger_gain} expected threat. The move lasted {decisions.after_tp} more decisions.",
@@ -16,36 +16,36 @@
       "outcome": "shot",
       "ended_zone": "final",
       "severity": 0.55,
-      "chosen": { "p_success": 0.12, "danger_gain": 0.09, "factors": { "p_success": 0.12, "danger_gain": 0.9, "progression": 0.2, "receiver_space": 0.1, "lane_openness": 0.2, "switch_of_play": 0.0 } },
-      "better": { "p_success": 0.78, "danger_gain": 0.05, "factors": { "p_success": 0.78, "danger_gain": 0.5, "progression": 0.1, "receiver_space": 0.7, "lane_openness": 0.8, "switch_of_play": 0.0 } },
-      "other": { "p_success": 0.55, "danger_gain": 0.02, "factors": { "p_success": 0.55, "danger_gain": 0.2, "progression": 0.0, "receiver_space": 0.5, "lane_openness": 0.5, "switch_of_play": 0.2 } }
+      "chosen": { "p_success": 0.12, "danger_gain": 0.09, "factors": { "p_success": 0.12, "danger_gain": 0.9, "progression": 0.2, "receiver_space": 0.1, "lane_openness": 0.2, "switch_of_play": 0.0, "counter_press": 0.33, "rest_defence": 0.5 } },
+      "better": { "p_success": 0.78, "danger_gain": 0.05, "factors": { "p_success": 0.78, "danger_gain": 0.5, "progression": 0.1, "receiver_space": 0.7, "lane_openness": 0.8, "switch_of_play": 0.0, "counter_press": 0.67, "rest_defence": 0.6 } },
+      "other": { "p_success": 0.55, "danger_gain": 0.02, "factors": { "p_success": 0.55, "danger_gain": 0.2, "progression": 0.0, "receiver_space": 0.5, "lane_openness": 0.5, "switch_of_play": 0.2, "counter_press": 0.33, "rest_defence": 0.7 } }
     },
     {
       "label_id": "P02",
       "outcome": "lost_tackle",
       "ended_zone": "mid",
       "severity": 0.48,
-      "chosen": { "p_success": 0.4, "danger_gain": 0.03, "factors": { "p_success": 0.4, "danger_gain": 0.3, "progression": 0.5, "receiver_space": 0.2, "lane_openness": 0.3, "switch_of_play": 0.0 } },
-      "better": { "p_success": 0.9, "danger_gain": 0.015, "factors": { "p_success": 0.9, "danger_gain": 0.15, "progression": 0.0, "receiver_space": 0.8, "lane_openness": 0.9, "switch_of_play": 0.6 } },
-      "other": { "p_success": 0.6, "danger_gain": 0.02, "factors": { "p_success": 0.6, "danger_gain": 0.2, "progression": 0.3, "receiver_space": 0.4, "lane_openness": 0.5, "switch_of_play": 0.1 } }
+      "chosen": { "p_success": 0.4, "danger_gain": 0.03, "factors": { "p_success": 0.4, "danger_gain": 0.3, "progression": 0.5, "receiver_space": 0.2, "lane_openness": 0.3, "switch_of_play": 0.0, "counter_press": 0.33, "rest_defence": 0.4 } },
+      "better": { "p_success": 0.9, "danger_gain": 0.015, "factors": { "p_success": 0.9, "danger_gain": 0.15, "progression": 0.0, "receiver_space": 0.8, "lane_openness": 0.9, "switch_of_play": 0.6, "counter_press": 0.67, "rest_defence": 0.7 } },
+      "other": { "p_success": 0.6, "danger_gain": 0.02, "factors": { "p_success": 0.6, "danger_gain": 0.2, "progression": 0.3, "receiver_space": 0.4, "lane_openness": 0.5, "switch_of_play": 0.1, "counter_press": 0.33, "rest_defence": 0.6 } }
     },
     {
       "label_id": "P11",
       "outcome": "lost_pass",
       "ended_zone": "final",
       "severity": 0.62,
-      "chosen": { "p_success": 0.3, "danger_gain": 0.07, "factors": { "p_success": 0.3, "danger_gain": 0.7, "progression": 0.7, "receiver_space": 0.2, "lane_openness": 0.2, "switch_of_play": 0.0 } },
-      "better": { "p_success": 0.7, "danger_gain": 0.06, "factors": { "p_success": 0.7, "danger_gain": 0.6, "progression": 0.5, "receiver_space": 0.6, "lane_openness": 0.7, "switch_of_play": 0.1 } },
-      "other": { "p_success": 0.8, "danger_gain": 0.01, "factors": { "p_success": 0.8, "danger_gain": 0.1, "progression": 0.0, "receiver_space": 0.6, "lane_openness": 0.8, "switch_of_play": 0.3 } }
+      "chosen": { "p_success": 0.3, "danger_gain": 0.07, "factors": { "p_success": 0.3, "danger_gain": 0.7, "progression": 0.7, "receiver_space": 0.2, "lane_openness": 0.2, "switch_of_play": 0.0, "counter_press": 0.67, "rest_defence": 0.5 } },
+      "better": { "p_success": 0.7, "danger_gain": 0.06, "factors": { "p_success": 0.7, "danger_gain": 0.6, "progression": 0.5, "receiver_space": 0.6, "lane_openness": 0.7, "switch_of_play": 0.1, "counter_press": 0.67, "rest_defence": 0.55 } },
+      "other": { "p_success": 0.8, "danger_gain": 0.01, "factors": { "p_success": 0.8, "danger_gain": 0.1, "progression": 0.0, "receiver_space": 0.6, "lane_openness": 0.8, "switch_of_play": 0.3, "counter_press": 0.33, "rest_defence": 0.7 } }
     },
     {
       "label_id": "P23",
       "outcome": "lost_tackle",
       "ended_zone": "mid",
       "severity": 0.51,
-      "chosen": { "p_success": 0.35, "danger_gain": 0.06, "factors": { "p_success": 0.35, "danger_gain": 0.6, "progression": 0.8, "receiver_space": 0.3, "lane_openness": 0.2, "switch_of_play": 0.0 } },
-      "better": { "p_success": 0.7, "danger_gain": 0.03, "factors": { "p_success": 0.7, "danger_gain": 0.3, "progression": 0.2, "receiver_space": 0.6, "lane_openness": 0.7, "switch_of_play": 0.9 } },
-      "other": { "p_success": 0.75, "danger_gain": 0.01, "factors": { "p_success": 0.75, "danger_gain": 0.1, "progression": 0.0, "receiver_space": 0.5, "lane_openness": 0.7, "switch_of_play": 0.2 } }
+      "chosen": { "p_success": 0.35, "danger_gain": 0.06, "factors": { "p_success": 0.35, "danger_gain": 0.6, "progression": 0.8, "receiver_space": 0.3, "lane_openness": 0.2, "switch_of_play": 0.0, "counter_press": 1.0, "rest_defence": 0.3 } },
+      "better": { "p_success": 0.7, "danger_gain": 0.03, "factors": { "p_success": 0.7, "danger_gain": 0.3, "progression": 0.2, "receiver_space": 0.6, "lane_openness": 0.7, "switch_of_play": 0.9, "counter_press": 0.33, "rest_defence": 0.7 } },
+      "other": { "p_success": 0.75, "danger_gain": 0.01, "factors": { "p_success": 0.75, "danger_gain": 0.1, "progression": 0.0, "receiver_space": 0.5, "lane_openness": 0.7, "switch_of_play": 0.2, "counter_press": 0.33, "rest_defence": 0.6 } }
     }
   ]
 }

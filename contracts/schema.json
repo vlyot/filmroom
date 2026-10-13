@@ -1,5 +1,5 @@
 {
-  "x-contract-version": "0.1.0",
+  "x-contract-version": "0.3.0",
   "$defs": {
     "BundleManifest": {
       "additionalProperties": false,
@@ -254,7 +254,9 @@
             "progression",
             "receiver_space",
             "lane_openness",
-            "switch_of_play"
+            "switch_of_play",
+            "counter_press",
+            "rest_defence"
           ],
           "type": "string"
         },
@@ -283,6 +285,7 @@
         "source": {
           "enum": [
             "fixtures",
+            "engine",
             "database"
           ],
           "type": "string"
@@ -539,7 +542,9 @@
               "progression",
               "receiver_space",
               "lane_openness",
-              "switch_of_play"
+              "switch_of_play",
+              "counter_press",
+              "rest_defence"
             ]
           },
           "type": "object"
@@ -928,6 +933,71 @@
       "title": "PossessionSummary",
       "type": "object"
     },
+    "RuleSet": {
+      "additionalProperties": false,
+      "description": "One side of a style: its slider positions and the principles behind them.",
+      "properties": {
+        "axis": {
+          "enum": [
+            "with_ball",
+            "without_ball"
+          ],
+          "type": "string"
+        },
+        "id": {
+          "anyOf": [
+            {
+              "enum": [
+                "possession",
+                "direct",
+                "counter"
+              ],
+              "type": "string"
+            },
+            {
+              "enum": [
+                "high_press",
+                "mid_block",
+                "low_block"
+              ],
+              "type": "string"
+            }
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "sliders": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "propertyNames": {
+            "enum": [
+              "risk_tolerance",
+              "verticality",
+              "press_trigger",
+              "line_height"
+            ]
+          },
+          "type": "object"
+        },
+        "principles": {
+          "items": {
+            "$ref": "#/$defs/StylePrinciple"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "axis",
+        "id",
+        "name",
+        "sliders",
+        "principles"
+      ],
+      "title": "RuleSet",
+      "type": "object"
+    },
     "ServerMessage": {
       "discriminator": {
         "mapping": {
@@ -961,6 +1031,53 @@
         }
       ],
       "title": "ServerMessage"
+    },
+    "SliderSpec": {
+      "additionalProperties": false,
+      "description": "What one slider does: weights[f] += gains[f] * (slider - 0.5). Each factor has at most one slider, so a\nflip attributed to a factor names the slider behind it.",
+      "properties": {
+        "slider": {
+          "enum": [
+            "risk_tolerance",
+            "verticality",
+            "press_trigger",
+            "line_height"
+          ],
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "statement": {
+          "type": "string"
+        },
+        "gains": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "propertyNames": {
+            "enum": [
+              "p_success",
+              "danger_gain",
+              "progression",
+              "receiver_space",
+              "lane_openness",
+              "switch_of_play",
+              "counter_press",
+              "rest_defence"
+            ]
+          },
+          "type": "object"
+        }
+      },
+      "required": [
+        "slider",
+        "label",
+        "statement",
+        "gains"
+      ],
+      "title": "SliderSpec",
+      "type": "object"
     },
     "Sliders": {
       "additionalProperties": false,
@@ -997,7 +1114,7 @@
     },
     "StyleConfig": {
       "additionalProperties": false,
-      "description": "Option score = sum(weights[f] * option.factors[f]); linear so any verdict change can be attributed.",
+      "description": "Option score = sum(weights[f] * option.factors[f]); linear so any verdict change can be attributed.\nWeights are derived from the sliders by the StyleLens.",
       "properties": {
         "id": {
           "type": "string"
@@ -1035,7 +1152,9 @@
               "progression",
               "receiver_space",
               "lane_openness",
-              "switch_of_play"
+              "switch_of_play",
+              "counter_press",
+              "rest_defence"
             ]
           },
           "type": "object"
@@ -1059,6 +1178,53 @@
       "title": "StyleConfig",
       "type": "object"
     },
+    "StyleLens": {
+      "additionalProperties": false,
+      "description": "Everything needed to build any style from sliders, as the API does: weights = base + the sum over\nsliders of gains * (slider - 0.5). Presets are rule-set pairs; flip reasons are measured against the\nreference.",
+      "properties": {
+        "reference_style_id": {
+          "type": "string"
+        },
+        "base": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "propertyNames": {
+            "enum": [
+              "p_success",
+              "danger_gain",
+              "progression",
+              "receiver_space",
+              "lane_openness",
+              "switch_of_play",
+              "counter_press",
+              "rest_defence"
+            ]
+          },
+          "type": "object"
+        },
+        "sliders": {
+          "items": {
+            "$ref": "#/$defs/SliderSpec"
+          },
+          "type": "array"
+        },
+        "rule_sets": {
+          "items": {
+            "$ref": "#/$defs/RuleSet"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "reference_style_id",
+        "base",
+        "sliders",
+        "rule_sets"
+      ],
+      "title": "StyleLens",
+      "type": "object"
+    },
     "StylePrinciple": {
       "additionalProperties": false,
       "properties": {
@@ -1072,7 +1238,9 @@
             "progression",
             "receiver_space",
             "lane_openness",
-            "switch_of_play"
+            "switch_of_play",
+            "counter_press",
+            "rest_defence"
           ],
           "type": "string"
         },

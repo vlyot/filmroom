@@ -20,6 +20,7 @@ filmroom-eval = "filmroom.eval.cli:main"
 
 [dependency-groups]
 dev = [
+    "matplotlib>=3.11.2",
     "pytest>=8.3",
     "ruff>=0.8",
 ]
