@@ -21,6 +21,49 @@ export interface FilmRoomContracts {
   [k: string]: unknown
 }
 /**
+ * The analyst writes no numbers: it cites possessions, and the UI shows their numbers from the engine.
+ * Status: `verified`, `fallback` (a canned line with the moments found, after the verifier rejected the
+ * answer twice) or `offline` (no LLM, or the daily allowance is used up).
+ *
+ * This interface was referenced by `FilmRoomContracts`'s JSON-Schema
+ * via the `definition` "AnalystReply".
+ */
+export interface AnalystReply {
+  text: string
+  possession_ids: string[]
+  status: "verified" | "fallback" | "offline"
+  model?: string | null
+}
+/**
+ * This interface was referenced by `FilmRoomContracts`'s JSON-Schema
+ * via the `definition` "AnalystRequest".
+ */
+export interface AnalystRequest {
+  question: string
+  /**
+   * @maxItems 6
+   */
+  history?:
+    | []
+    | [ChatTurn]
+    | [ChatTurn, ChatTurn]
+    | [ChatTurn, ChatTurn, ChatTurn]
+    | [ChatTurn, ChatTurn, ChatTurn, ChatTurn]
+    | [ChatTurn, ChatTurn, ChatTurn, ChatTurn, ChatTurn]
+    | [ChatTurn, ChatTurn, ChatTurn, ChatTurn, ChatTurn, ChatTurn]
+  match_id?: string | null
+  style_id?: string | null
+  language?: string
+}
+/**
+ * This interface was referenced by `FilmRoomContracts`'s JSON-Schema
+ * via the `definition` "ChatTurn".
+ */
+export interface ChatTurn {
+  role: "user" | "assistant"
+  text: string
+}
+/**
  * This interface was referenced by `FilmRoomContracts`'s JSON-Schema
  * via the `definition` "BundleManifest".
  */
@@ -31,11 +74,16 @@ export interface BundleManifest {
   files: string[]
 }
 /**
+ * What a narrative asserts, checked against the engine: `better_option` names the best option under the
+ * style (`ref` is its option ID), `chosen_fits_style` says the choice was the best one, `turning_point`
+ * names the decision (`ref` is its index) and `style_principle` a factor on the style's card.
+ *
  * This interface was referenced by `FilmRoomContracts`'s JSON-Schema
  * via the `definition` "Claim".
  */
 export interface Claim {
-  type: "better_option" | "turning_point" | "player_skill" | "style_principle"
+  type:
+    "better_option" | "chosen_fits_style" | "turning_point" | "style_principle"
   ref: string
 }
 /**
@@ -145,6 +193,7 @@ export interface Health {
   status: "ok"
   contract_version: string
   source: "fixtures" | "engine" | "database"
+  llm: boolean
 }
 /**
  * This interface was referenced by `FilmRoomContracts`'s JSON-Schema
@@ -209,8 +258,10 @@ export interface MatchSummary {
   teams: [Team, Team]
 }
 /**
- * `template` holds {fact.id} slots; the client fills them from Possession.facts, so no number in a
- * narrative ever comes from the LLM.
+ * `template` holds {fact.id} slots and `facts` holds their values for this style and language; the
+ * client fills the slots from `facts` alone, so no number in a narrative ever comes from the LLM.
+ * Status: `template` (no generation planned), `pending` (template shown, generation queued), `verified`
+ * (LLM text that passed the verifier) or `failed` (template shown, generation gave up).
  *
  * This interface was referenced by `FilmRoomContracts`'s JSON-Schema
  * via the `definition` "Narrative".
@@ -221,6 +272,9 @@ export interface Narrative {
   audience: "coach" | "player" | "fan"
   language: string
   template: string
+  facts: {
+    [k: string]: Fact
+  }
   claims: Claim[]
   status: "template" | "pending" | "verified" | "failed"
   model?: string | null
@@ -246,6 +300,56 @@ export interface OverlayEvent {
   captions: {
     [k: string]: string
   }
+}
+/**
+ * This interface was referenced by `FilmRoomContracts`'s JSON-Schema
+ * via the `definition` "PackMoment".
+ */
+export interface PackMoment {
+  rank: number
+  summary: PossessionSummary
+  verdict: Verdict
+  narrative: Narrative
+}
+/**
+ * This interface was referenced by `FilmRoomContracts`'s JSON-Schema
+ * via the `definition` "PossessionSummary".
+ */
+export interface PossessionSummary {
+  id: string
+  match_id: string
+  team: 0 | 1
+  start_ms: number
+  end_ms: number
+  outcome: "shot" | "goal" | "lost_tackle" | "lost_pass" | "out" | "stoppage"
+  ended_zone: "own" | "mid" | "final"
+  flagged: boolean
+  severity: number
+  turning_point_idx: number | null
+  provenance: "engine" | "fixture"
+}
+/**
+ * This interface was referenced by `FilmRoomContracts`'s JSON-Schema
+ * via the `definition` "Verdict".
+ */
+export interface Verdict {
+  style_id: string
+  decision_idx: number
+  best_option_id: string
+  chosen_option_id: string
+  better_available: boolean
+  margin: number
+  flip_reason?: FlipReason | null
+}
+/**
+ * This interface was referenced by `FilmRoomContracts`'s JSON-Schema
+ * via the `definition` "PackTheme".
+ */
+export interface PackTheme {
+  title: string
+  summary: string
+  possession_ids: string[]
+  status: "verified" | "fallback"
 }
 /**
  * Samples at a fixed rate. Each row is [x, y] per entity in `pids` order (ball first), flattened.
@@ -297,42 +401,12 @@ export interface Possession {
 }
 /**
  * This interface was referenced by `FilmRoomContracts`'s JSON-Schema
- * via the `definition` "Verdict".
- */
-export interface Verdict {
-  style_id: string
-  decision_idx: number
-  best_option_id: string
-  chosen_option_id: string
-  better_available: boolean
-  margin: number
-  flip_reason?: FlipReason | null
-}
-/**
- * This interface was referenced by `FilmRoomContracts`'s JSON-Schema
  * via the `definition` "PossessionFlagged".
  */
 export interface PossessionFlagged {
   type?: "possession_flagged"
   summary: PossessionSummary
   narrative: Narrative
-}
-/**
- * This interface was referenced by `FilmRoomContracts`'s JSON-Schema
- * via the `definition` "PossessionSummary".
- */
-export interface PossessionSummary {
-  id: string
-  match_id: string
-  team: 0 | 1
-  start_ms: number
-  end_ms: number
-  outcome: "shot" | "goal" | "lost_tackle" | "lost_pass" | "out" | "stoppage"
-  ended_zone: "own" | "mid" | "final"
-  flagged: boolean
-  severity: number
-  turning_point_idx: number | null
-  provenance: "engine" | "fixture"
 }
 /**
  * One side of a style: its slider positions and the principles behind them.
@@ -367,6 +441,45 @@ export interface StylePrinciple {
     | "counter_press"
     | "rest_defence"
   source: string
+}
+/**
+ * This interface was referenced by `FilmRoomContracts`'s JSON-Schema
+ * via the `definition` "SessionPack".
+ */
+export interface SessionPack {
+  match_id: string
+  team: 0 | 1
+  style_id: string
+  period: "half" | "full"
+  audience: "coach" | "player" | "fan"
+  language: string
+  themes: PackTheme[]
+  moments: PackMoment[]
+  style_shifts: StyleShift[]
+}
+/**
+ * How many of the pack's moments another preset judges differently, and the factor behind most of
+ * those flips.
+ *
+ * This interface was referenced by `FilmRoomContracts`'s JSON-Schema
+ * via the `definition` "StyleShift".
+ */
+export interface StyleShift {
+  style_id: string
+  name: string
+  changed: number
+  factor:
+    | (
+        | "p_success"
+        | "danger_gain"
+        | "progression"
+        | "receiver_space"
+        | "lane_openness"
+        | "switch_of_play"
+        | "counter_press"
+        | "rest_defence"
+      )
+    | null
 }
 /**
  * What one slider does: weights[f] += gains[f] * (slider - 0.5). Each factor has at most one slider, so a

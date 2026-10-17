@@ -6,7 +6,6 @@ import numpy as np
 import pytest
 
 from filmroom.api.engine_store import EngineStore
-from filmroom.contracts.models import template_slots
 from filmroom.data.catalog import Catalog
 from filmroom.data.positions import team_of
 from filmroom.data.textlog import PassComplete
@@ -139,9 +138,6 @@ def test_engine_store_output_is_valid_clean_and_cached(catalog, real_settings):
     flagged = [p for p in possessions if p.flagged]
     assert 0.05 < len(flagged) / len(possessions) < 0.4
     full = [restarted.possession(p.id) for p in flagged]
-    for p in full:
-        narrative = restarted.narrative(p.id, "possession-high-press", "coach", "en")
-        assert template_slots(narrative.template) <= set(p.facts)
     blob = "\n".join(p.model_dump_json() for p in full)
     forbidden = catalog.identity.forbidden_names()
     assert not [n for n in forbidden if re.search(rf"\b{re.escape(n)}\b", blob)]

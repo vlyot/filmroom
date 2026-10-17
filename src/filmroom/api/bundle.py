@@ -8,12 +8,16 @@ import json
 import shutil
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import get_args
 
 from fastapi.testclient import TestClient
 
+from filmroom.agents.facts import supported_languages
+from filmroom.agents.layer import AgentLayer
 from filmroom.api.app import create_app
 from filmroom.api.store import FixtureStore
-from filmroom.contracts.models import CONTRACT_VERSION, BundleManifest
+from filmroom.contracts.models import CONTRACT_VERSION, Audience, BundleManifest
+from filmroom.style import load_lens, presets_by_id
 
 
 def route_to_path(route: str, params: dict[str, str] | None = None) -> str:
@@ -31,8 +35,12 @@ def _strip_coordinates(possession: dict) -> dict:
     return possession
 
 
-def export_bundle(store: FixtureStore, out_dir: Path, public: bool) -> BundleManifest:
-    client = TestClient(create_app(store, cors_origins=[]))
+def export_bundle(
+    store: FixtureStore, out_dir: Path, public: bool, agents: AgentLayer | None = None
+) -> BundleManifest:
+    """Narratives are exported for every preset, audience and language: the cached verified one where the
+    agent layer has it, the template otherwise."""
+    client = TestClient(create_app(store, cors_origins=[], agents=agents))
     requests: list[tuple[str, dict[str, str] | None]] = [
         ("/matches", None),
         ("/styles", None),
@@ -45,9 +53,13 @@ def export_bundle(store: FixtureStore, out_dir: Path, public: bool) -> BundleMan
         requests.append((f"/possessions/{pid}", None))
         if not public:
             requests.append((f"/possessions/{pid}/positions", None))
-        for n in fixture.narratives:
-            params = {"style": n.style_id, "audience": n.audience, "language": n.language}
-            requests.append((f"/possessions/{pid}/narrative", params))
+        if not fixture.possession.flagged:
+            continue
+        for style in presets_by_id(load_lens()):
+            for audience in get_args(Audience):
+                for language in supported_languages():
+                    params = {"style": style, "audience": audience, "language": language}
+                    requests.append((f"/possessions/{pid}/narrative", params))
 
     if out_dir.exists():
         shutil.rmtree(out_dir)

@@ -1,0 +1,14 @@
+{
+  "coach.en.better": "At {tp.time}, {tp.player} chose {chosen.action}, with {chosen.p_success_band} odds of success. Under {style.name} the better option was {best.action}: {best.p_success_band} odds, adding {best.danger_gain} of danger.",
+  "coach.en.fits": "At {tp.time}, {tp.player} chose {chosen.action}, with {chosen.p_success_band} odds of success. Under {style.name} that was the best option available; the move broke down after it.",
+  "player.en.better": "At {tp.time} you chose {chosen.action}, with {chosen.p_success} odds of coming off. The better option was {best.action}, with {best.p_success} odds.",
+  "player.en.fits": "At {tp.time} you chose {chosen.action}, with {chosen.p_success} odds of coming off. Under {style.name} that was your best option, so keep making that read.",
+  "fan.en.better": "Watch {tp.time}: {tp.player} goes for {chosen.action}, but {best.action} was on.",
+  "fan.en.fits": "Watch {tp.time}: {tp.player} goes for {chosen.action}, and under {style.name} that was the right call.",
+  "coach.es.better": "En el {tp.time}, {tp.player} eligió {chosen.action}, con probabilidad {chosen.p_success_band} de éxito. Con {style.name}, la mejor opción era {best.action}: probabilidad {best.p_success_band} y {best.danger_gain} de peligro añadido.",
+  "coach.es.fits": "En el {tp.time}, {tp.player} eligió {chosen.action}, con probabilidad {chosen.p_success_band} de éxito. Con {style.name}, era la mejor opción disponible; la jugada se rompió después.",
+  "player.es.better": "En el {tp.time} elegiste {chosen.action}, con {chosen.p_success} de salir bien. La mejor opción era {best.action}, con {best.p_success}.",
+  "player.es.fits": "En el {tp.time} elegiste {chosen.action}, con {chosen.p_success} de salir bien. Con {style.name}, era tu mejor opción: sigue leyendo así la jugada.",
+  "fan.es.better": "Atención al {tp.time}: {tp.player} se decide por {chosen.action}, pero {best.action} estaba ahí.",
+  "fan.es.fits": "Atención al {tp.time}: {tp.player} se decide por {chosen.action} y, con {style.name}, era la decisión correcta."
+}

@@ -5,8 +5,12 @@ description = "AI film-room analyst: what was available and not taken, on synthe
 readme = "README.md"
 requires-python = ">=3.13,<3.14"
 dependencies = [
+    "agent-framework-core==1.21.0",
+    "agent-framework-mistral==1.0.0b260918",
     "fastapi>=0.115",
+    "httpx>=0.28,<1",
     "httpx2>=2.13",
+    "mcp>=1.24,<2",
     "numpy>=2.1",
     "openpyxl>=3.1",
     "pandas>=2.2",
@@ -41,4 +45,7 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-markers = ["data: needs the real SoccER dataset (skipped when DATA_DIR is not available)"]
+markers = [
+    "data: needs the real SoccER dataset (skipped when DATA_DIR is not available)",
+    "llm: calls the live Mistral API and spends allowance (skipped unless RUN_LLM_TESTS=1)",
+]

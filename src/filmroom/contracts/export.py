@@ -12,6 +12,8 @@ from filmroom.api.app import create_app
 from filmroom.api.store import FixtureStore
 from filmroom.contracts.models import (
     CONTRACT_VERSION,
+    AnalystReply,
+    AnalystRequest,
     BundleManifest,
     Health,
     Match,
@@ -21,6 +23,7 @@ from filmroom.contracts.models import (
     PositionsChunk,
     Possession,
     PossessionSummary,
+    SessionPack,
     StyleConfig,
     StyleLens,
 )
@@ -36,6 +39,9 @@ MODELS = [
     StyleConfig,
     StyleLens,
     Narrative,
+    AnalystRequest,
+    AnalystReply,
+    SessionPack,
     OverlayEvent,
     BundleManifest,
     ServerMessage,

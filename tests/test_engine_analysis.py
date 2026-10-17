@@ -4,7 +4,7 @@ from typing import get_args
 import numpy as np
 import pytest
 
-from filmroom.contracts.models import FactorName, Possession, template_slots
+from filmroom.contracts.models import FactorName, Possession
 from filmroom.engine.analyse import analyse_match, analyse_possession
 from filmroom.engine.decisions import RawDecision
 from filmroom.engine.geometry import PITCH, Snapshot
@@ -13,13 +13,10 @@ from filmroom.engine.pass_model import EngineModels, Logistic, SkillProfiles
 from filmroom.engine.possessions import PossessionSplitter
 from filmroom.engine.turning_point import EngineParams, fit_params, regret
 from filmroom.engine.xt import xt
-from filmroom.fixtures import FixtureSpec
 from filmroom.style import load_lens, presets
-from tests.conftest import REPO
 from tests.engine_synth import SynthMatch, counter_attack
 
 STYLES = presets(load_lens())
-TEMPLATES = FixtureSpec.model_validate_json((REPO / "fixtures" / "fixture_spec.json").read_bytes()).narratives
 FLAG_ALL = EngineParams(flag_threshold=0.0, severity_scale=0.05)
 
 
@@ -128,7 +125,7 @@ def test_the_turning_point_is_the_final_decision_and_only_when_flagged():
         assert a.regret == regret(a.values[-1], p.decisions[-1].chosen_option_id)
 
 
-def test_analysis_is_contract_valid_and_flagged_facts_fill_every_template():
+def test_analysis_is_contract_valid_and_flagged_possessions_carry_verdicts_and_facts():
     analyses = analyse_match(counter_attack().build(), constant_models(), STYLES, FLAG_ALL)
     assert [a.possession.id for a in analyses] == [
         "2000_01_01_009-0",
@@ -140,7 +137,7 @@ def test_analysis_is_contract_valid_and_flagged_facts_fill_every_template():
         assert all(0 <= v <= 1 for d in p.decisions for o in d.options for v in o.factors.values())
         if p.flagged:
             assert set(p.verdicts) == {s.id for s in STYLES}
-            assert all(template_slots(t) <= set(p.facts) for t in TEMPLATES.values())
+            assert {"tp.player", "tp.time", "chosen.p_success", "alt.player"} <= set(p.facts)
 
 
 def test_a_goal_is_never_flagged():

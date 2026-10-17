@@ -11,10 +11,11 @@ from filmroom.contracts.models import (
     StyleConfig,
     StyleLens,
     Verdict,
+    template_slots,
 )
 from filmroom.engine.turning_point import EngineParams
 from tests.engine_synth import SYNTH_MATCH, counter_attack
-from tests.test_engine_analysis import FLAG_ALL, STYLES, TEMPLATES, constant_models
+from tests.test_engine_analysis import FLAG_ALL, STYLES, constant_models
 
 SLUG = "2000_01_01_009"
 
@@ -27,7 +28,6 @@ def _store(cache_dir=None, models=None, params=FLAG_ALL) -> EngineStore:
         models=models or (lambda: {SYNTH_MATCH: constant_models()}),
         styles=STYLES,
         params=params,
-        templates=TEMPLATES,
         cache_dir=cache_dir,
     )
 
@@ -42,8 +42,9 @@ def test_health_reports_the_engine_and_the_contract_version(client):
         "status": "ok",
         "contract_version": CONTRACT_VERSION,
         "source": "engine",
+        "llm": False,
     }
-    assert CONTRACT_VERSION == "0.3.0"
+    assert CONTRACT_VERSION == "0.4.0"
 
 
 def test_engine_store_serves_every_route(client):
@@ -60,10 +61,9 @@ def test_engine_store_serves_every_route(client):
     narrative = Narrative.model_validate(
         client.get(f"/possessions/{possession.id}/narrative", params=params).json()
     )
-    assert (
-        narrative.status == "template"
-        and narrative.claims[0].ref == possession.verdicts[STYLES[1].id].best_option_id
-    )
+    assert narrative.status == "template" and narrative.language == "es"
+    assert narrative.claims[0].ref == possession.verdicts[STYLES[1].id].best_option_id
+    assert template_slots(narrative.template) <= set(narrative.facts)
 
 
 def test_unknown_ids_and_missing_narratives_return_404(client):
@@ -71,8 +71,10 @@ def test_unknown_ids_and_missing_narratives_return_404(client):
     assert client.get("/matches/nope/possessions").status_code == 404
     assert client.get(f"/possessions/{SLUG}-99999").status_code == 404
     assert client.get("/possessions/nope-1").status_code == 404
-    params = {"style": STYLES[0].id, "audience": "coach", "language": "fr"}
+    params = {"style": "nope", "audience": "coach", "language": "en"}
     assert client.get(f"/possessions/{SLUG}-0/narrative", params=params).status_code == 404
+    params = {"style": STYLES[0].id, "audience": "coach", "language": "fr"}
+    assert client.get(f"/possessions/{SLUG}-0/narrative", params=params).status_code == 422
 
 
 def test_analyses_are_served_from_the_disk_cache_on_a_fresh_start(tmp_path):

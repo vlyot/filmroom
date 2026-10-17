@@ -1,6 +1,5 @@
 """Engine-backed store: analyses a match on first request, with the models that never saw that match, and
-caches the result on disk. Serves the same routes as FixtureStore. Narratives are template-only until the
-Phase 3 narrator; only flagged possessions have them."""
+caches the result on disk. Serves the same routes as FixtureStore."""
 
 import hashlib
 import json
@@ -13,16 +12,12 @@ from pydantic import TypeAdapter
 from filmroom.api.store import summary_of
 from filmroom.config import Settings
 from filmroom.contracts.models import (
-    Audience,
-    Claim,
     Match,
     MatchSummary,
-    Narrative,
     PositionsChunk,
     Possession,
     PossessionSummary,
     StyleConfig,
-    template_slots,
 )
 from filmroom.data.catalog import LOADER_VERSION, Catalog, MatchData, match_slug
 from filmroom.engine import ENGINE_VERSION
@@ -46,7 +41,6 @@ class EngineStore:
         models: Callable[[], dict[str, EngineModels]],
         styles: list[StyleConfig],
         params: EngineParams,
-        templates: dict[str, str],
         cache_dir: Path | None = None,
     ):
         self._load = cache(load)
@@ -54,7 +48,6 @@ class EngineStore:
         self._fit_models = models
         self._styles = styles
         self._params = params
-        self._templates = templates
         self._analyses: dict[str, list[Possession]] = {}
         key = json.dumps([params.model_dump(), [s.model_dump() for s in styles]], sort_keys=True)
         version = f"e{ENGINE_VERSION}-l{LOADER_VERSION}-{hashlib.sha1(key.encode()).hexdigest()[:8]}"
@@ -63,14 +56,12 @@ class EngineStore:
     @classmethod
     def from_settings(cls, settings: Settings) -> "EngineStore":
         catalog = Catalog(settings)
-        spec = json.loads((settings.fixtures_dir / "fixture_spec.json").read_text(encoding="utf-8"))
         return cls(
             load=catalog.load,
             match_ids=[m.id for m in catalog.matches()],
             models=lambda: fit_lomo(load_rows(catalog, settings.cache_dir)),
             styles=presets(load_lens()),
             params=load_params(),
-            templates=spec["narratives"],
             cache_dir=settings.cache_dir,
         )
 
@@ -109,6 +100,9 @@ class EngineStore:
     def possessions(self, match_id: str) -> list[PossessionSummary]:
         return [summary_of(p) for p in self._possessions(match_id)]
 
+    def match_possessions(self, match_id: str) -> list[Possession]:
+        return self._possessions(match_id)
+
     def possession(self, possession_id: str) -> Possession:
         slug = possession_id.rsplit("-", 1)[0]
         for p in self._possessions(slug) if slug in self._ids else []:
@@ -119,23 +113,3 @@ class EngineStore:
     def positions(self, possession_id: str) -> PositionsChunk:
         p = self.possession(possession_id)
         return positions_chunk(self._md(p.match_id), p.id, p.start_frame, p.end_frame)
-
-    def narrative(self, possession_id: str, style: str, audience: Audience, language: str) -> Narrative:
-        p = self.possession(possession_id)
-        template = self._templates.get(f"{audience}.{language}")
-        if (
-            not p.flagged
-            or style not in p.verdicts
-            or template is None
-            or template_slots(template) - set(p.facts)
-        ):
-            raise KeyError(f"no narrative for {possession_id} / {style} / {audience} / {language}")
-        return Narrative(
-            possession_id=p.id,
-            style_id=style,
-            audience=audience,
-            language=language,
-            template=template,
-            claims=[Claim(type="better_option", ref=p.verdicts[style].best_option_id)],
-            status="template",
-        )

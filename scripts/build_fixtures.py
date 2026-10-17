@@ -24,7 +24,7 @@ def main() -> None:
         label = labels[ps.label_id]
         md = catalog.load(label.match_id)
         matches.setdefault(label.match_id, match_view(md))
-        fixtures.append(build_possession(label, md, ps, spec.routine, spec.narratives, styles))
+        fixtures.append(build_possession(label, md, ps, spec.routine, styles))
     write_fixtures(root, list(matches.values()), fixtures)
     for f in fixtures:
         p = f.possession

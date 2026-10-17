@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "FilmRoom API",
-    "version": "0.3.0"
+    "version": "0.4.0"
   },
   "paths": {
     "/health": {
@@ -392,6 +392,7 @@
     "/possessions/{possession_id}/narrative": {
       "get": {
         "summary": "Narrative",
+        "description": "The template at once (status `pending` while a verified narrative is generated), or the cached\nverified narrative. 404 for an unflagged possession or an unknown preset.",
         "operationId": "narrative_possessions__possession_id__narrative_get",
         "parameters": [
           {
@@ -461,18 +462,284 @@
           }
         }
       }
+    },
+    "/analyst": {
+      "post": {
+        "summary": "Analyst",
+        "description": "Ask the analyst about a match. It answers from the engine tools over MCP, writes no numbers and\ncites the possessions it talks about; status `offline` when no LLM is available.",
+        "operationId": "analyst_analyst_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalystRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalystReply"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/matches/{match_id}/session-pack": {
+      "get": {
+        "summary": "Session Pack",
+        "description": "The team's top flagged moments for half-time (`half`: first-half moments) or full-time, grouped\ninto themes, each with its narrative and how the other presets would judge it. Narratives not ready\nwithin about forty seconds come back as templates (status `pending`).",
+        "operationId": "session_pack_matches__match_id__session_pack_get",
+        "parameters": [
+          {
+            "name": "match_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Match Id"
+            }
+          },
+          {
+            "name": "team",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 1,
+              "minimum": 0,
+              "title": "Team"
+            }
+          },
+          {
+            "name": "style",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Style"
+            }
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "half",
+                "full"
+              ],
+              "type": "string",
+              "default": "full",
+              "title": "Period"
+            }
+          },
+          {
+            "name": "audience",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "coach",
+                "player",
+                "fan"
+              ],
+              "type": "string",
+              "default": "coach",
+              "title": "Audience"
+            }
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "en",
+              "title": "Language"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionPack"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "AnalystReply": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "possession_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Possession Ids"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "verified",
+              "fallback",
+              "offline"
+            ],
+            "title": "Status"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "text",
+          "possession_ids",
+          "status"
+        ],
+        "title": "AnalystReply",
+        "description": "The analyst writes no numbers: it cites possessions, and the UI shows their numbers from the engine.\nStatus: `verified`, `fallback` (a canned line with the moments found, after the verifier rejected the\nanswer twice) or `offline` (no LLM, or the daily allowance is used up)."
+      },
+      "AnalystRequest": {
+        "properties": {
+          "question": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Question"
+          },
+          "history": {
+            "items": {
+              "$ref": "#/components/schemas/ChatTurn"
+            },
+            "type": "array",
+            "maxItems": 6,
+            "title": "History",
+            "default": []
+          },
+          "match_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Match Id"
+          },
+          "style_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Style Id"
+          },
+          "language": {
+            "type": "string",
+            "pattern": "^[a-z]{2}(-[A-Z]{2})?$",
+            "title": "Language",
+            "default": "en"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "question"
+        ],
+        "title": "AnalystRequest"
+      },
+      "ChatTurn": {
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "assistant"
+            ],
+            "title": "Role"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 2000,
+            "title": "Text"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "role",
+          "text"
+        ],
+        "title": "ChatTurn"
+      },
       "Claim": {
         "properties": {
           "type": {
             "type": "string",
             "enum": [
               "better_option",
+              "chosen_fits_style",
               "turning_point",
-              "player_skill",
               "style_principle"
             ],
             "title": "Type"
@@ -488,7 +755,8 @@
           "type",
           "ref"
         ],
-        "title": "Claim"
+        "title": "Claim",
+        "description": "What a narrative asserts, checked against the engine: `better_option` names the best option under the\nstyle (`ref` is its option ID), `chosen_fits_style` says the choice was the best one, `turning_point`\nnames the decision (`ref` is its index) and `style_principle` a factor on the style's card."
       },
       "DangerPoint": {
         "properties": {
@@ -678,6 +946,10 @@
               "database"
             ],
             "title": "Source"
+          },
+          "llm": {
+            "type": "boolean",
+            "title": "Llm"
           }
         },
         "additionalProperties": false,
@@ -685,7 +957,8 @@
         "required": [
           "status",
           "contract_version",
-          "source"
+          "source",
+          "llm"
         ],
         "title": "Health"
       },
@@ -823,6 +1096,13 @@
             "type": "string",
             "title": "Template"
           },
+          "facts": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Fact"
+            },
+            "type": "object",
+            "title": "Facts"
+          },
           "claims": {
             "items": {
               "$ref": "#/components/schemas/Claim"
@@ -860,11 +1140,12 @@
           "audience",
           "language",
           "template",
+          "facts",
           "claims",
           "status"
         ],
         "title": "Narrative",
-        "description": "`template` holds {fact.id} slots; the client fills them from Possession.facts, so no number in a\nnarrative ever comes from the LLM."
+        "description": "`template` holds {fact.id} slots and `facts` holds their values for this style and language; the\nclient fills the slots from `facts` alone, so no number in a narrative ever comes from the LLM.\nStatus: `template` (no generation planned), `pending` (template shown, generation queued), `verified`\n(LLM text that passed the verifier) or `failed` (template shown, generation gave up)."
       },
       "Option": {
         "properties": {
@@ -965,6 +1246,68 @@
           "factors"
         ],
         "title": "Option"
+      },
+      "PackMoment": {
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "title": "Rank"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/PossessionSummary"
+          },
+          "verdict": {
+            "$ref": "#/components/schemas/Verdict"
+          },
+          "narrative": {
+            "$ref": "#/components/schemas/Narrative"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rank",
+          "summary",
+          "verdict",
+          "narrative"
+        ],
+        "title": "PackMoment"
+      },
+      "PackTheme": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "possession_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Possession Ids"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "verified",
+              "fallback"
+            ],
+            "title": "Status"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "title",
+          "summary",
+          "possession_ids",
+          "status"
+        ],
+        "title": "PackTheme"
       },
       "PlayerRef": {
         "properties": {
@@ -1364,6 +1707,83 @@
         "title": "RuleSet",
         "description": "One side of a style: its slider positions and the principles behind them."
       },
+      "SessionPack": {
+        "properties": {
+          "match_id": {
+            "type": "string",
+            "title": "Match Id"
+          },
+          "team": {
+            "type": "integer",
+            "enum": [
+              0,
+              1
+            ],
+            "title": "Team"
+          },
+          "style_id": {
+            "type": "string",
+            "title": "Style Id"
+          },
+          "period": {
+            "type": "string",
+            "enum": [
+              "half",
+              "full"
+            ],
+            "title": "Period"
+          },
+          "audience": {
+            "type": "string",
+            "enum": [
+              "coach",
+              "player",
+              "fan"
+            ],
+            "title": "Audience"
+          },
+          "language": {
+            "type": "string",
+            "pattern": "^[a-z]{2}(-[A-Z]{2})?$",
+            "title": "Language"
+          },
+          "themes": {
+            "items": {
+              "$ref": "#/components/schemas/PackTheme"
+            },
+            "type": "array",
+            "title": "Themes"
+          },
+          "moments": {
+            "items": {
+              "$ref": "#/components/schemas/PackMoment"
+            },
+            "type": "array",
+            "title": "Moments"
+          },
+          "style_shifts": {
+            "items": {
+              "$ref": "#/components/schemas/StyleShift"
+            },
+            "type": "array",
+            "title": "Style Shifts"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "match_id",
+          "team",
+          "style_id",
+          "period",
+          "audience",
+          "language",
+          "themes",
+          "moments",
+          "style_shifts"
+        ],
+        "title": "SessionPack"
+      },
       "SliderSpec": {
         "properties": {
           "slider": {
@@ -1608,6 +2028,53 @@
           "source"
         ],
         "title": "StylePrinciple"
+      },
+      "StyleShift": {
+        "properties": {
+          "style_id": {
+            "type": "string",
+            "title": "Style Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "changed": {
+            "type": "integer",
+            "title": "Changed"
+          },
+          "factor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "p_success",
+                  "danger_gain",
+                  "progression",
+                  "receiver_space",
+                  "lane_openness",
+                  "switch_of_play",
+                  "counter_press",
+                  "rest_defence"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Factor"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "style_id",
+          "name",
+          "changed",
+          "factor"
+        ],
+        "title": "StyleShift",
+        "description": "How many of the pack's moments another preset judges differently, and the factor behind most of\nthose flips."
       },
       "Team": {
         "properties": {

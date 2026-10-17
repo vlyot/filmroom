@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import pytest
@@ -100,7 +101,7 @@ def mini_fixtures(mini_settings: Settings, tmp_path: Path) -> Path:
     styles = presets(load_lens())
     md = Catalog(mini_settings).load(MINI_MATCH)
     label = LabelRecord("T01", "tuning", MINI_MATCH, 1, 20, None, 11, 9, 7, True, 3)
-    fixture = build_possession(label, md, spec.possessions[0], spec.routine, spec.narratives, styles)
+    fixture = build_possession(label, md, spec.possessions[0], spec.routine, styles)
     out = tmp_path / "fixtures"
     write_fixtures(out, [match_view(md)], [fixture])
     return out
@@ -113,9 +114,12 @@ def real_settings() -> Settings:
 
 def pytest_collection_modifyitems(config, items):
     data_dir = Settings().data_dir
-    if data_dir is not None and data_dir.is_dir():
-        return
-    skip = pytest.mark.skip(reason="DATA_DIR not available")
+    skips = {}
+    if data_dir is None or not data_dir.is_dir():
+        skips["data"] = pytest.mark.skip(reason="DATA_DIR not available")
+    if os.environ.get("RUN_LLM_TESTS") != "1" or Settings().mistral_api_key is None:
+        skips["llm"] = pytest.mark.skip(reason="spends Mistral allowance; set RUN_LLM_TESTS=1 to run")
     for item in items:
-        if "data" in item.keywords:
-            item.add_marker(skip)
+        for marker, skip in skips.items():
+            if marker in item.keywords:
+                item.add_marker(skip)

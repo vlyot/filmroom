@@ -94,6 +94,11 @@ def presets(lens: LensConfig) -> list[StyleConfig]:
     ]
 
 
+def presets_by_id(lens: LensConfig) -> dict[str, StyleConfig]:
+    """The presets keyed by ID, in order, so the first is the reference."""
+    return {s.id: s for s in presets(lens)}
+
+
 def public_lens(lens: LensConfig) -> StyleLens:
     return StyleLens(
         reference_style_id=lens.presets[0].id, base=lens.base, sliders=lens.sliders, rule_sets=lens.rule_sets

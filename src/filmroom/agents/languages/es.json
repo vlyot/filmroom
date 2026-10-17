@@ -1,0 +1,86 @@
+{
+  "name": "Spanish",
+  "prompt_note": "Escribe en español neutro con registro futbolístico: 'pase', 'último tercio', 'presión'.",
+  "decimal": ",",
+  "percent": "{value} %",
+  "band_usage": "probabilidad {slot}",
+  "phrase_blockers": ["a", "al", "un", "una", "el", "la"],
+  "alternative_markers": ["en lugar de", "en vez de", "habría sido mejor", "hubiera sido mejor", "debió", "debería haber", "estaba ahí", "era mejor", "otra opción"],
+  "receiver_before": "pases?\\s+(?:a|al|para)",
+  "bands": {
+    "low": "baja",
+    "medium": "media",
+    "high": "alta"
+  },
+  "actions": {
+    "pass": "un pase a {player}",
+    "space": "un pase al espacio",
+    "carry": "una conducción",
+    "shot": "un disparo"
+  },
+  "factors": {
+    "p_success": "la probabilidad de éxito",
+    "danger_gain": "el peligro generado",
+    "progression": "la progresión",
+    "receiver_space": "el espacio del receptor",
+    "lane_openness": "una línea de pase abierta",
+    "switch_of_play": "el cambio de orientación",
+    "counter_press": "la cobertura para la contrapresión",
+    "rest_defence": "la defensa de transición"
+  },
+  "outcomes": {
+    "shot": "Disparos",
+    "goal": "Goles",
+    "lost_tackle": "Perdidas en una entrada",
+    "lost_pass": "Pases interceptados",
+    "out": "Balón fuera",
+    "stoppage": "Interrupciones"
+  },
+  "zones": {
+    "own": "campo propio",
+    "mid": "mediocampo",
+    "final": "último tercio"
+  },
+  "fallback": {
+    "theme_title": "{outcome}, {zone}",
+    "theme_summary": "Jugadas que terminaron así en {zone}.",
+    "analyst": "No he podido formularlo de forma verificable. Estas son las jugadas que encontré.",
+    "analyst_none": "No he podido formularlo de forma verificable y no encontré jugadas que mostrar.",
+    "analyst_offline": "El analista en directo no está disponible ahora mismo."
+  },
+  "number_words": [
+    "cero", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve", "diez", "once", "doce",
+    "trece", "catorce", "quince", "dieciséis", "diecisiete", "dieciocho", "diecinueve", "veinte", "veintiuno", "treinta", "cuarenta", "cincuenta",
+    "sesenta", "setenta", "ochenta", "noventa", "cien", "ciento", "doscientos", "mil", "millón", "millones", "docena", "mitad",
+    "doble", "triple", "cuádruple", "por ciento", "porcentaje"
+  ],
+  "sentence_starters": [
+    "a", "al", "algo", "algún", "alguna", "alguno", "allí", "ahí", "ahora", "antes", "aquí", "así",
+    "atención", "aunque", "bajo", "bien", "buen", "buena", "cada", "casi", "claramente", "como", "con", "contra",
+    "cuando", "dando", "de", "debía", "del", "desde", "después", "donde", "durante", "el", "ella", "ellos",
+    "en", "entonces", "entre", "era", "es", "esa", "ese", "eso", "esta", "está", "estaba", "este",
+    "esto", "fíjate", "fue", "gran", "había", "habría", "hacia", "hasta", "hay", "incluso", "jugando", "la",
+    "las", "le", "lo", "los", "luego", "mejor", "mientras", "mira", "mirad", "mucho", "muy", "nadie",
+    "ni", "ningún", "ninguna", "no", "nos", "nosotros", "nunca", "o", "ojo", "otra", "otro", "para",
+    "pero", "perdió", "pocas", "poco", "por", "porque", "presión", "pudo", "que", "qué", "quizá", "quizás",
+    "recuerda", "sí", "se", "según", "sin", "sobre", "solo", "sólo", "su", "sus", "tal", "también",
+    "tampoco", "tenía", "toda", "todo", "tras", "tu", "tú", "tus", "un", "una", "uno", "usted",
+    "vaya", "ve", "y", "ya", "yo", "elegiste", "eligió", "buscó", "buscaste", "intentó", "intentaste", "optó",
+    "optaste", "arriesgó", "arriesgaste", "lástima", "cuidado", "paciencia", "espacio", "opciones", "opción", "pase", "disparo", "conducción",
+    "seguir", "sigue", "piensa", "considera", "imagina", "nota", "observa", "cerca", "pronto", "tarde", "rápido", "seguro",
+    "arriesgado", "valiente", "aquella", "aquel", "aquello", "estas", "estos", "esas", "esos", "pases", "balones", "centros",
+    "disparos", "pérdidas", "errores", "ocasiones", "espacios", "líneas", "transiciones", "contras", "contraataques", "salida", "juego", "balón",
+    "zona", "zonas", "banda", "bandas", "carril", "área", "último", "primer", "demasiados", "demasiadas", "muchos", "muchas",
+    "varios", "varias", "pocos", "largo", "largos", "corto", "cortos", "lento", "directo", "directos", "arriesgados", "arriesgadas",
+    "seguros", "busca", "mantén", "juega", "elige", "usa", "evita", "cambia", "pausa", "conducciones", "regates", "decisiones",
+    "riesgos", "peligro", "amenaza", "control", "ritmo", "estructura", "mediocampo", "defensa", "ataque", "costado", "equipo", "jugadores",
+    "jugador", "nuestro", "nuestra", "temas", "tema", "momentos", "momento", "patrones", "patrón", "hábitos", "hábito", "ambos",
+    "ambas"
+  ],
+  "allowed_capitalised": [],
+  "starter_suffixes": [
+    "ción", "ciones", "sión", "siones", "mente", "ando", "iendo", "ado", "ados", "ada", "adas", "ido",
+    "idos", "ida", "idas", "dad", "dades", "oso", "osa", "osos", "osas", "able", "ables", "ible",
+    "ibles", "ivo", "iva", "ivos", "ivas", "ar", "er", "ir", "aba", "aban", "ían", "ía"
+  ]
+}

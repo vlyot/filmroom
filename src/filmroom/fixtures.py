@@ -12,18 +12,15 @@ import numpy as np
 from filmroom.api.store import FixturePossession
 from filmroom.contracts.models import (
     ActionKind,
-    Claim,
     Contract,
     DangerPoint,
     Decision,
     Fact,
     FactorName,
     Match,
-    Narrative,
     Option,
     Possession,
     StyleConfig,
-    template_slots,
 )
 from filmroom.data.catalog import MatchData, match_slug
 from filmroom.data.positions import BALL_PID, downsample, team_of
@@ -55,7 +52,6 @@ class PossessionSpec(Contract):
 
 class FixtureSpec(Contract):
     routine: OptionSpec  # value for decisions that are not the turning point
-    narratives: dict[str, str]  # "audience.language" -> template with {fact.id} slots
     possessions: list[PossessionSpec]
 
 
@@ -101,7 +97,6 @@ def build_possession(
     md: MatchData,
     spec: PossessionSpec,
     routine: OptionSpec,
-    templates: dict[str, str],
     styles: list[StyleConfig],
 ) -> FixturePossession:
     team = team_of(label.tp_pid)
@@ -156,9 +151,6 @@ def build_possession(
         "alt.danger_gain": Fact(value=spec.better.danger_gain, kind="xt"),
         "decisions.after_tp": Fact(value=len(decisions) - 1 - tp_idx, kind="count"),
     }
-    for key, template in templates.items():
-        if missing := template_slots(template) - set(facts):
-            raise ValueError(f"{label.id} narrative {key} uses unknown facts: {sorted(missing)}")
 
     window = md.track.window(label.start_frame, label.end_frame)
     samples = downsample(window, md.clock, hz=10)
@@ -191,22 +183,7 @@ def build_possession(
         facts=facts,
     )
     positions = positions_chunk(md, possession_id, label.start_frame, label.end_frame)
-    narratives = [
-        Narrative(
-            possession_id=possession_id,
-            style_id=s.id,
-            audience=key.split(".")[0],
-            language=key.split(".")[1],
-            template=template,
-            claims=[Claim(type="better_option", ref=f"d{tp_idx}.better")],
-            status="template",
-        )  # fmt: skip
-        for s in styles
-        for key, template in templates.items()
-    ]
-    return FixturePossession(
-        label_id=label.id, possession=possession, positions=positions, narratives=narratives
-    )
+    return FixturePossession(label_id=label.id, possession=possession, positions=positions)
 
 
 def write_fixtures(out_dir: Path, matches: list[Match], fixtures: list[FixturePossession]) -> None:

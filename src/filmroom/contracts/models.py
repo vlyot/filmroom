@@ -9,7 +9,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-CONTRACT_VERSION = "0.3.0"
+CONTRACT_VERSION = "0.4.0"
 
 Side = Literal[0, 1]
 Band = Literal["low", "medium", "high"]
@@ -28,6 +28,7 @@ FactorName = Literal[
 SliderName = Literal["risk_tolerance", "verticality", "press_trigger", "line_height"]
 WithBall = Literal["possession", "direct", "counter"]
 WithoutBall = Literal["high_press", "mid_block", "low_block"]
+LANGUAGE = r"^[a-z]{2}(-[A-Z]{2})?$"
 SLOT = re.compile(r"\{([a-z0-9_.]+)\}")
 
 
@@ -204,19 +205,26 @@ class StyleLens(Contract):
 
 
 class Claim(Contract):
-    type: Literal["better_option", "turning_point", "player_skill", "style_principle"]
+    """What a narrative asserts, checked against the engine: `better_option` names the best option under the
+    style (`ref` is its option ID), `chosen_fits_style` says the choice was the best one, `turning_point`
+    names the decision (`ref` is its index) and `style_principle` a factor on the style's card."""
+
+    type: Literal["better_option", "chosen_fits_style", "turning_point", "style_principle"]
     ref: str
 
 
 class Narrative(Contract):
-    """`template` holds {fact.id} slots; the client fills them from Possession.facts, so no number in a
-    narrative ever comes from the LLM."""
+    """`template` holds {fact.id} slots and `facts` holds their values for this style and language; the
+    client fills the slots from `facts` alone, so no number in a narrative ever comes from the LLM.
+    Status: `template` (no generation planned), `pending` (template shown, generation queued), `verified`
+    (LLM text that passed the verifier) or `failed` (template shown, generation gave up)."""
 
     possession_id: str
     style_id: str
     audience: Audience
-    language: str = Field(pattern=r"^[a-z]{2}(-[A-Z]{2})?$")
+    language: str = Field(pattern=LANGUAGE)
     template: str
+    facts: dict[str, Fact]
     claims: list[Claim]
     status: Literal["template", "pending", "verified", "failed"]
     model: str | None = None
@@ -235,6 +243,67 @@ class Health(Contract):
     status: Literal["ok"]
     contract_version: str
     source: Literal["fixtures", "engine", "database"]
+    llm: bool  # whether narratives are generated and the analyst answers
+
+
+class ChatTurn(Contract):
+    role: Literal["user", "assistant"]
+    text: str = Field(max_length=2000)
+
+
+class AnalystRequest(Contract):
+    question: str = Field(min_length=1, max_length=500)
+    history: list[ChatTurn] = Field(default=[], max_length=6)
+    match_id: str | None = None
+    style_id: str | None = None
+    language: str = Field(default="en", pattern=LANGUAGE)
+
+
+class AnalystReply(Contract):
+    """The analyst writes no numbers: it cites possessions, and the UI shows their numbers from the engine.
+    Status: `verified`, `fallback` (a canned line with the moments found, after the verifier rejected the
+    answer twice) or `offline` (no LLM, or the daily allowance is used up)."""
+
+    text: str
+    possession_ids: list[str]
+    status: Literal["verified", "fallback", "offline"]
+    model: str | None = None
+
+
+class PackTheme(Contract):
+    title: str
+    summary: str
+    possession_ids: list[str]
+    status: Literal["verified", "fallback"]
+
+
+class PackMoment(Contract):
+    rank: int
+    summary: PossessionSummary
+    verdict: Verdict
+    narrative: Narrative
+
+
+class StyleShift(Contract):
+    """How many of the pack's moments another preset judges differently, and the factor behind most of
+    those flips."""
+
+    style_id: str
+    name: str
+    changed: int
+    factor: FactorName | None
+
+
+class SessionPack(Contract):
+    match_id: str
+    team: Side
+    style_id: str
+    period: Literal["half", "full"]
+    audience: Audience
+    language: str = Field(pattern=LANGUAGE)
+    themes: list[PackTheme]
+    moments: list[PackMoment]
+    style_shifts: list[StyleShift]
 
 
 class BundleManifest(Contract):

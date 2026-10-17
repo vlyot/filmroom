@@ -4,12 +4,15 @@ import time
 import numpy as np
 import pytest
 
+from filmroom.agents.facts import supported_languages
+from filmroom.agents.layer import AgentLayer
 from filmroom.api.bundle import export_bundle
 from filmroom.api.store import FixtureStore
 from filmroom.contracts.models import template_slots
 from filmroom.data.catalog import Catalog
 from filmroom.eval.cli import FixtureDecisionSource, evaluate
 from filmroom.eval.labels import load_labels
+from filmroom.style import load_lens, presets_by_id
 from tests.conftest import REPO
 
 pytestmark = pytest.mark.data
@@ -67,8 +70,12 @@ def test_all_tuning_turning_points_fall_inside_their_windows(catalog, real_setti
 def test_built_fixtures_are_valid_and_their_narratives_resolve(fixture_store):
     fixtures = fixture_store.all_fixtures()
     assert len(fixtures) == 4
+    agents = AgentLayer.offline(fixture_store)
     for f in fixtures:
-        assert all(template_slots(n.template) <= set(f.possession.facts) for n in f.narratives)
+        for style in presets_by_id(load_lens()):
+            for language in supported_languages():
+                request = agents.narration(f.possession.id, style, "coach", language)
+                assert template_slots(request.template().template) <= set(request.facts)
     assert any(v.flip_reason for f in fixtures for v in f.possession.verdicts.values())
 
 

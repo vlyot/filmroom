@@ -1,15 +1,14 @@
 """Data sources behind the API. FixtureStore serves files built by scripts/build_fixtures.py; a database store
-replaces it in Phase 5. Lookups that find nothing raise KeyError, which the API turns into 404."""
+replaces it in Phase 5. Lookups that find nothing raise KeyError, which the API turns into 404. Narratives
+come from the agent layer, not the stores."""
 
 from pathlib import Path
 from typing import Protocol
 
 from filmroom.contracts.models import (
-    Audience,
     Contract,
     Match,
     MatchSummary,
-    Narrative,
     PositionsChunk,
     Possession,
     PossessionSummary,
@@ -20,7 +19,6 @@ class FixturePossession(Contract):
     label_id: str | None
     possession: Possession
     positions: PositionsChunk
-    narratives: list[Narrative]
 
 
 class Store(Protocol):
@@ -29,9 +27,9 @@ class Store(Protocol):
     def matches(self) -> list[MatchSummary]: ...
     def match(self, match_id: str) -> Match: ...
     def possessions(self, match_id: str) -> list[PossessionSummary]: ...
+    def match_possessions(self, match_id: str) -> list[Possession]: ...
     def possession(self, possession_id: str) -> Possession: ...
     def positions(self, possession_id: str) -> PositionsChunk: ...
-    def narrative(self, possession_id: str, style: str, audience: Audience, language: str) -> Narrative: ...
 
 
 def summary_of(possession: Possession) -> PossessionSummary:
@@ -67,17 +65,14 @@ class FixtureStore:
         return self._read(self.root / "matches" / f"{match_id}.json", Match)
 
     def possessions(self, match_id: str) -> list[PossessionSummary]:
+        return [summary_of(p) for p in self.match_possessions(match_id)]
+
+    def match_possessions(self, match_id: str) -> list[Possession]:
         self.match(match_id)
-        return [summary_of(f.possession) for f in self.all_fixtures() if f.possession.match_id == match_id]
+        return [f.possession for f in self.all_fixtures() if f.possession.match_id == match_id]
 
     def possession(self, possession_id: str) -> Possession:
         return self.fixture(possession_id).possession
 
     def positions(self, possession_id: str) -> PositionsChunk:
         return self.fixture(possession_id).positions
-
-    def narrative(self, possession_id: str, style: str, audience: Audience, language: str) -> Narrative:
-        for n in self.fixture(possession_id).narratives:
-            if (n.style_id, n.audience, n.language) == (style, audience, language):
-                return n
-        raise KeyError(f"no narrative for {possession_id} / {style} / {audience} / {language}")

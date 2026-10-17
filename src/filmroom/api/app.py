@@ -1,14 +1,21 @@
+import logging
 from collections.abc import Callable
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 
+from filmroom.agents.facts import supported_languages
+from filmroom.agents.layer import AgentLayer
+from filmroom.agents.session_pack import PackRequest
 from filmroom.api.engine_store import EngineStore
 from filmroom.api.store import FixtureStore, Store
 from filmroom.config import Settings
 from filmroom.contracts.models import (
     CONTRACT_VERSION,
+    AnalystReply,
+    AnalystRequest,
     Audience,
     Health,
     Match,
@@ -17,12 +24,13 @@ from filmroom.contracts.models import (
     PositionsChunk,
     Possession,
     PossessionSummary,
+    SessionPack,
     Sliders,
     StyleConfig,
     StyleLens,
     Verdict,
 )
-from filmroom.style import load_lens, presets, public_lens, style_from_sliders, verdict
+from filmroom.style import load_lens, presets, presets_by_id, public_lens, style_from_sliders, verdict
 
 SliderQuery = Annotated[float | None, Query(ge=0, le=1)]
 
@@ -34,13 +42,23 @@ def _found[T](lookup: Callable[[], T]) -> T:
         raise HTTPException(status_code=404, detail=str(missing.args[0])) from missing
 
 
-def create_app(store: Store, cors_origins: list[str]) -> FastAPI:
-    app = FastAPI(title="FilmRoom API", version=CONTRACT_VERSION)
-    app.add_middleware(CORSMiddleware, allow_origins=cors_origins, allow_methods=["GET"], allow_headers=["*"])
+def _supported(language: str) -> str:
+    if language not in (supported := supported_languages()):
+        detail = f"unsupported language; supported: {', '.join(supported)}"
+        raise HTTPException(status_code=422, detail=detail)
+    return language
+
+
+def create_app(store: Store, cors_origins: list[str], agents: AgentLayer | None = None) -> FastAPI:
+    agents = agents or AgentLayer.offline(store)
+    app = FastAPI(title="FilmRoom API", version=CONTRACT_VERSION, lifespan=agents.lifespan)
+    app.add_middleware(
+        CORSMiddleware, allow_origins=cors_origins, allow_methods=["GET", "POST"], allow_headers=["*"]
+    )
 
     @app.get("/health")
     def health() -> Health:
-        return Health(status="ok", contract_version=CONTRACT_VERSION, source=store.source)
+        return Health(status="ok", contract_version=CONTRACT_VERSION, source=store.source, llm=agents.live)
 
     @app.get("/matches")
     def matches() -> list[MatchSummary]:
@@ -104,16 +122,65 @@ def create_app(store: Store, cors_origins: list[str]) -> FastAPI:
         return verdict(possession.decisions[possession.turning_point_idx], judged, reference)
 
     @app.get("/possessions/{possession_id}/narrative")
-    def narrative(
+    async def narrative(
         possession_id: str, style: str, audience: Audience = "coach", language: str = "en"
     ) -> Narrative:
-        return _found(lambda: store.narrative(possession_id, style, audience, language))
+        """The template at once (status `pending` while a verified narrative is generated), or the cached
+        verified narrative. 404 for an unflagged possession or an unknown preset."""
+        _supported(language)
+        request = await run_in_threadpool(
+            _found, lambda: agents.narration(possession_id, style, audience, language)
+        )
+        return agents.narratives.get(request)
 
+    @app.post("/analyst")
+    async def analyst(request: AnalystRequest) -> AnalystReply:
+        """Ask the analyst about a match. It answers from the engine tools over MCP, writes no numbers and
+        cites the possessions it talks about; status `offline` when no LLM is available."""
+        _supported(request.language)
+        if request.style_id is not None:
+            _found(lambda: presets_by_id(load_lens())[request.style_id])
+        if request.match_id is not None:
+            await run_in_threadpool(_found, lambda: store.match(request.match_id))
+        return await agents.analyst.answer(request)
+
+    @app.get("/matches/{match_id}/session-pack")
+    async def session_pack(
+        match_id: str,
+        team: Annotated[int, Query(ge=0, le=1)],
+        style: str | None = None,
+        period: Literal["half", "full"] = "full",
+        audience: Audience = "coach",
+        language: str = "en",
+    ) -> SessionPack:
+        """The team's top flagged moments for half-time (`half`: first-half moments) or full-time, grouped
+        into themes, each with its narrative and how the other presets would judge it. Narratives not ready
+        within about forty seconds come back as templates (status `pending`)."""
+        style_id = style or load_lens().presets[0].id
+        request = PackRequest(match_id, team, style_id, period, audience, _supported(language))
+        try:
+            return await agents.packs.build(request)
+        except KeyError as missing:
+            raise HTTPException(status_code=404, detail=str(missing.args[0])) from missing
+
+    app.router.routes.extend(agents.mcp_routes())
     return app
+
+
+def _log_to_stdout() -> None:
+    """One JSON line per LLM call and narrative, for Railway's logs."""
+    logger = logging.getLogger("filmroom")
+    if not logger.handlers:
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter("%(message)s"))
+        logger.addHandler(handler)
+        logger.setLevel(logging.INFO)
+        logger.propagate = False  # FastMCP adds a root handler, which would print every line twice
 
 
 settings = Settings()
 store = (
     EngineStore.from_settings(settings) if settings.store == "engine" else FixtureStore(settings.fixtures_dir)
 )
-app = create_app(store, settings.cors_origins)
+_log_to_stdout()
+app = create_app(store, settings.cors_origins, AgentLayer.from_settings(settings, store))

@@ -54,6 +54,7 @@ def test_every_get_route_returns_schema_valid_data(client):
         "status": "ok",
         "contract_version": CONTRACT_VERSION,
         "source": "fixtures",
+        "llm": False,
     }
     [summary] = [MatchSummary.model_validate(m) for m in client.get("/matches").json()]
     match = Match.model_validate(client.get(f"/matches/{summary.id}").json())
@@ -71,7 +72,7 @@ def test_every_get_route_returns_schema_valid_data(client):
     narrative = Narrative.model_validate(
         client.get(f"/possessions/{possession.id}/narrative", params=params).json()
     )
-    assert template_slots(narrative.template) <= set(possession.facts)
+    assert narrative.status == "template" and template_slots(narrative.template) <= set(narrative.facts)
 
 
 def test_unknown_ids_return_404(client):

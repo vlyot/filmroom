@@ -1,0 +1,94 @@
+{
+  "name": "English",
+  "prompt_note": "Write in British English. Football register: 'pitch', 'pass', 'final third'.",
+  "decimal": ".",
+  "percent": "{value}%",
+  "band_usage": "{slot} odds",
+  "phrase_blockers": ["to", "a", "an", "the"],
+  "alternative_markers": ["instead", "was on", "were on", "should have", "would have been better", "better option", "better choice", "rather than"],
+  "receiver_before": "pass(?:es)?\\s+(?:to|for)",
+  "bands": {
+    "low": "low",
+    "medium": "medium",
+    "high": "high"
+  },
+  "actions": {
+    "pass": "a pass to {player}",
+    "space": "a pass into space",
+    "carry": "a dribble",
+    "shot": "a shot"
+  },
+  "factors": {
+    "p_success": "success odds",
+    "danger_gain": "danger gain",
+    "progression": "progression",
+    "receiver_space": "space for the receiver",
+    "lane_openness": "an open passing lane",
+    "switch_of_play": "switching play",
+    "counter_press": "counter-press cover",
+    "rest_defence": "rest defence"
+  },
+  "outcomes": {
+    "shot": "Shots",
+    "goal": "Goals",
+    "lost_tackle": "Lost in a tackle",
+    "lost_pass": "Passes cut out",
+    "out": "Ball out of play",
+    "stoppage": "Stoppages"
+  },
+  "zones": {
+    "own": "own third",
+    "mid": "midfield",
+    "final": "final third"
+  },
+  "fallback": {
+    "theme_title": "{outcome}, {zone}",
+    "theme_summary": "Moments that ended this way in the {zone}.",
+    "analyst": "I couldn't put that into words I can verify. These are the moments I found.",
+    "analyst_none": "I couldn't put that into words I can verify, and found no moments to show.",
+    "analyst_offline": "The live analyst is offline right now."
+  },
+  "number_words": [
+    "zero", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve",
+    "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty", "thirty", "forty", "fifty", "sixty",
+    "seventy", "eighty", "ninety", "hundred", "thousand", "million", "dozen", "half", "halves", "twice", "thrice", "double",
+    "triple", "quadruple", "percent", "per cent", "percentage"
+  ],
+  "sentence_starters": [
+    "a", "about", "after", "again", "against", "all", "also", "although", "an", "and", "another", "any",
+    "as", "at", "back", "because", "before", "behind", "being", "best", "better", "between", "both", "but",
+    "by", "can", "clearly", "could", "despite", "did", "do", "does", "down", "during", "each", "earlier",
+    "either", "even", "every", "few", "first", "for", "forward", "from", "given", "good", "great", "had",
+    "has", "have", "having", "he", "her", "here", "his", "how", "however", "if", "in", "inside",
+    "instead", "into", "it", "its", "just", "keep", "keeping", "later", "less", "let", "look", "losing",
+    "many", "more", "most", "much", "neither", "next", "no", "nobody", "none", "nor", "not", "nothing",
+    "now", "of", "on", "once", "one", "only", "or", "other", "out", "over", "playing", "possession",
+    "pressure", "rather", "really", "same", "several", "she", "should", "since", "so", "some", "still", "such",
+    "that", "the", "their", "then", "there", "these", "they", "this", "those", "though", "through", "to",
+    "too", "under", "unlike", "until", "up", "upfield", "was", "watch", "we", "were", "what", "when",
+    "where", "whether", "which", "while", "who", "why", "with", "within", "without", "would", "yes", "yet",
+    "you", "your", "lost", "going", "trying", "taking", "moving", "finding", "picking", "spotting", "wide", "centrally",
+    "deep", "high", "late", "early", "quick", "quickly", "simple", "safe", "safer", "risky", "brave", "bold",
+    "patience", "space", "options", "option", "pass", "passing", "dribbling", "shooting", "shot", "nice", "smart", "sharp",
+    "notice", "note", "spot", "think", "remember", "consider", "try", "ask", "imagine", "picture", "alas", "oh",
+    "well", "right", "wrong", "close", "almost", "nearly", "there's", "that's", "it's", "he's", "she's", "you're",
+    "we're", "they're", "here's", "what's", "don't", "didn't", "couldn't", "wouldn't", "isn't", "wasn't", "long", "short",
+    "direct", "central", "backward", "sideways", "slow", "fast", "patient", "loose", "sloppy", "careless", "poor", "repeated",
+    "balls", "passes", "crosses", "shots", "dribbles", "turnovers", "losses", "mistakes", "chances", "lanes", "spaces", "gaps",
+    "width", "depth", "support", "overloads", "switches", "transitions", "counters", "counter", "press", "build", "play", "ball",
+    "runs", "moves", "decisions", "choices", "risks", "danger", "threat", "control", "tempo", "rhythm", "shape", "structure",
+    "midfield", "defence", "attack", "flank", "wing", "wings", "final", "box", "area", "zone", "zones", "line",
+    "lines", "team", "players", "player", "our", "stay", "use", "find", "pick", "move", "speed", "go",
+    "take", "make", "give", "choose", "trust", "wait", "hold", "release", "shift", "switch", "cut", "drive",
+    "carry", "beat", "cheap", "needless", "forced", "rushed", "hopeful", "overplayed", "wasted", "turnover", "giveaways", "breakdowns",
+    "breakdown", "progress", "progression", "recycling", "patterns", "pattern", "habits", "habit", "theme", "themes", "moments", "moment",
+    "half-chances"
+  ],
+  "allowed_capitalised": [
+    "I"
+  ],
+  "starter_suffixes": [
+    "ing", "ed", "ly", "tion", "tions", "sion", "sions", "ment", "ments", "ness", "ive", "ives",
+    "able", "ible", "ous", "ful", "less", "ity", "ance", "ence", "ances", "ences", "ers", "ies"
+  ]
+}

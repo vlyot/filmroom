@@ -31,6 +31,20 @@ Expected threat (xT) uses Karun Singh's published 12 × 8 grid: K. Singh, "Intro
 
 `filmroom.style` judges every option under a coach's style. A style is four sliders (risk tolerance, verticality, press trigger, defensive line height); the factor weights are a linear function of them (`src/filmroom/styles.json`), and each factor is moved by at most one slider, so whenever two styles disagree the verdict change traces to one factor and the slider behind it. Six presets pair a with-the-ball rule set (Possession, Direct, Counter) with a without-the-ball one (High Press, Mid-Block, Low Block); every rule set states its principles with a source. The without-the-ball sliders weigh what losing the ball would cost: counter-press cover around where it would be lost, and how much of the space behind that spot the team still controls.
 
+## Agent layer
+
+`filmroom.agents` explains the engine's verdicts with Microsoft Agent Framework and Mistral (`mistral-small-2603`), calling the engine through MCP.
+
+- **Narrator:** one call per flagged moment, audience (coach, player, fan), language (English, Spanish) and style. It writes text with `{slot}` placeholders and claims; code fills the slots from the engine, so the model never writes a number or a name.
+- **Verifier:** plain code. It rejects digits, spelled-out numbers and names outside slots, unknown slots, and claims that contradict the verdict under the active style; a rejected draft is retried once, then the template is shown. A template is always shown first, and the verified narrative replaces it.
+- **MCP server** at `/mcp`: six read-only engine tools (flagged moments, a possession, its turning point, options under a style, comparing styles, similar situations). Any MCP client can use them.
+- **Analyst** (`POST /analyst`): a tool-calling agent over those tools. It writes no numbers; it cites the possessions it talks about, and the app shows their numbers from the engine.
+- **Session pack** (`/matches/{id}/session-pack`): an Agent Framework workflow that ranks the team's flagged moments, counts how other presets would judge them, groups them into themes and narrates each.
+
+Without `MISTRAL_API_KEY` everything still works on templates, and the analyst says it is offline. Every model call is logged with its tokens and counted against a daily cap (`LLM_DAILY_TOKEN_LIMIT`).
+
+What the verifier can't promise: it checks numbers, names, slots and claims, not every shade of meaning. A sentence can still use a slot loosely ("a pass" where the best option was a dribble), and a real name that ends like an ordinary word ("-ando", "-ing") could open a sentence.
+
 ## Common commands
 
 ```bash
@@ -43,7 +57,9 @@ uv run filmroom-eval                           # what was on instead: engine alt
 uv run filmroom-eval --thresholds              # refit the flag threshold over all matches (no labels); writes engine/params.json
 uv run filmroom-eval --calibration             # pass-model and xG calibration out of fold; plot in .cache/eval
 uv run filmroom-eval --lens                    # preset disagreement, flip attribution, slider directions, flag rates
-uv run uvicorn filmroom.api.app:app --reload   # API on :8000 (fixtures; STORE=engine for live analysis)
+uv run uvicorn filmroom.api.app:app --reload   # API on :8000 (fixtures; STORE=engine for live analysis); MCP at /mcp
+uv run python scripts/prewarm_narratives.py --match 2019_09_09_001 --top 5   # narrative cache: dry run, add --yes to spend
+RUN_LLM_TESTS=1 uv run pytest tests/test_llm_live.py   # a few live Mistral calls (skipped otherwise)
 ```
 
 Web app (`web/`, React + Vite + shadcn/ui):
