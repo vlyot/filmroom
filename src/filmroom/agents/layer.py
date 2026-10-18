@@ -18,8 +18,19 @@ from filmroom.agents.session_pack import SessionPackBuilder
 from filmroom.agents.tools import EngineTools
 from filmroom.api.store import Store
 from filmroom.config import Settings
-from filmroom.contracts.models import Audience
+from filmroom.contracts.models import Audience, Match, Possession
 from filmroom.style import load_lens, presets_by_id
+
+
+def narration_for(
+    possession: Possession, match: Match, style_id: str, audience: Audience, language: str
+) -> NarrationRequest:
+    """The narrative request for a flagged possession under a preset; KeyError for an unknown preset."""
+    styles = presets_by_id(load_lens())
+    if style_id not in styles:
+        raise KeyError(f"unknown style: {style_id}")
+    reference = next(iter(styles.values()))
+    return NarrationRequest(possession, match, styles[style_id], reference, audience, language)
 
 
 @dataclass
@@ -67,15 +78,10 @@ class AgentLayer:
     ) -> NarrationRequest:
         """Resolves a narrative request; raises KeyError for an unknown possession or style, or a possession
         that isn't flagged. The caller checks the language is supported."""
-        styles = presets_by_id(load_lens())
-        if style_id not in styles:
-            raise KeyError(f"unknown style: {style_id}")
         possession = self.store.possession(possession_id)
         if not possession.flagged:
             raise KeyError(f"not flagged: {possession_id}")
-        style, reference = styles[style_id], next(iter(styles.values()))
-        match = self.store.match(possession.match_id)
-        return NarrationRequest(possession, match, style, reference, audience, language)
+        return narration_for(possession, self.store.match(possession.match_id), style_id, audience, language)
 
     def mcp_routes(self) -> list[BaseRoute]:
         """The MCP endpoint (/mcp), to add to the API's routes."""

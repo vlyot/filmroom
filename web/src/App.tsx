@@ -1,119 +1,112 @@
 import { useEffect, useState } from "react"
 import { AlertCircleIcon } from "lucide-react"
+import { toast } from "sonner"
 
-import type {
-  BundleManifest,
-  MatchSummary,
-  PossessionSummary,
-} from "@/contracts"
-import { loadManifest, loadMatches, loadPossessions } from "@/lib/bundle"
+import { useResource } from "@/hooks/use-resource"
+import { href, useRoute } from "@/lib/router"
+import { connectSource, type FallbackSource } from "@/lib/source/fallback"
+import { PreferencesProvider } from "@/state/preferences"
+import { SourceProvider, useSource, useSourceState } from "@/state/source"
+import { ModeBadge } from "@/components/mode-badge"
+import { StyleControls } from "@/components/style-controls"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Badge } from "@/components/ui/badge"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-
-type MatchRow = { match: MatchSummary; possessions: PossessionSummary[] }
-type State =
-  | { status: "loading" }
-  | { status: "error"; message: string }
-  | { status: "ready"; manifest: BundleManifest; rows: MatchRow[] }
-
-async function loadBundle(): Promise<State> {
-  const [manifest, matches] = await Promise.all([loadManifest(), loadMatches()])
-  const rows = await Promise.all(
-    matches.map(async (match) => ({
-      match,
-      possessions: await loadPossessions(match.id),
-    }))
-  )
-  return { status: "ready", manifest, rows }
-}
+import { TooltipProvider } from "@/components/ui/tooltip"
+import { HomePage } from "@/pages/home"
+import { MatchLayout } from "@/pages/match-layout"
 
 export function App() {
-  const [state, setState] = useState<State>({ status: "loading" })
+  const [source, setSource] = useState<FallbackSource | null>(null)
+  useEffect(() => {
+    void connectSource().then(setSource)
+  }, [])
+  if (!source) return <Loading />
+  return (
+    <SourceProvider source={source}>
+      <Lens />
+    </SourceProvider>
+  )
+}
+
+/** Styles and the lens come first: every verdict on every page is computed from them. */
+function Lens() {
+  const source = useSource()
+  const { mode, lost } = useSourceState()
+  const lens = useResource(`${mode}:lens`, () =>
+    Promise.all([source.styles(), source.lens()])
+  )
 
   useEffect(() => {
-    let cancelled = false
-    loadBundle()
-      .catch((error: unknown): State => ({
-        status: "error",
-        message: error instanceof Error ? error.message : String(error),
-      }))
-      .then((next) => {
-        if (!cancelled) setState(next)
+    if (lost)
+      toast.warning("The live API stopped answering", {
+        description: "Switched to the offline bundle.",
       })
-    return () => {
-      cancelled = true
-    }
-  }, [])
+  }, [lost])
 
-  return (
-    <main className="mx-auto flex min-h-svh max-w-3xl flex-col gap-6 p-6">
-      <header className="flex flex-col gap-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-2xl font-semibold tracking-tight">FilmRoom</h1>
-          {state.status === "ready" && (
-            <>
-              <Badge variant="secondary">
-                contract v{state.manifest.contract_version}
-              </Badge>
-              <Badge variant="outline">
-                {state.manifest.public ? "public bundle" : "full bundle"}
-              </Badge>
-            </>
-          )}
-        </div>
-        <p className="text-sm text-muted-foreground">
-          What was on, and not taken.
-        </p>
-      </header>
-
-      {state.status === "loading" && (
-        <div className="flex flex-col gap-4" aria-label="Loading matches">
-          <Skeleton className="h-28 w-full rounded-xl" />
-          <Skeleton className="h-28 w-full rounded-xl" />
-        </div>
-      )}
-
-      {state.status === "error" && (
+  if (lens.status === "loading") return <Loading />
+  if (lens.status === "error") {
+    return (
+      <main className="mx-auto max-w-3xl p-6">
         <Alert variant="destructive">
           <AlertCircleIcon />
           <AlertTitle>No match data found</AlertTitle>
           <AlertDescription>
-            {state.message}. Export the bundle with scripts/export_bundle.py.
+            {lens.error.message}. Start the API, or export the bundle with
+            scripts/export_bundle.py.
           </AlertDescription>
         </Alert>
-      )}
+      </main>
+    )
+  }
+  const [styles, styleLens] = lens.data
+  return (
+    <PreferencesProvider styles={styles} lens={styleLens}>
+      <TooltipProvider>
+        <Shell />
+      </TooltipProvider>
+    </PreferencesProvider>
+  )
+}
 
-      {state.status === "ready" &&
-        state.rows.map(({ match, possessions }) => (
-          <Card key={match.id}>
-            <CardHeader>
-              <CardTitle>{match.title}</CardTitle>
-              <CardDescription>
-                {match.mode.replaceAll("_", " ")} ·{" "}
-                {Math.round(match.duration_ms / 60000)} min
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-wrap items-center gap-2 text-sm">
-              <span>
-                {possessions.length} flagged{" "}
-                {possessions.length === 1 ? "possession" : "possessions"}
-              </span>
-              {possessions.map((p) => (
-                <Badge key={p.id} variant="outline">
-                  {p.outcome.replaceAll("_", " ")} · {p.ended_zone}
-                </Badge>
-              ))}
-            </CardContent>
-          </Card>
-        ))}
+function Shell() {
+  const route = useRoute()
+  return (
+    <div className="min-h-svh">
+      <header className="sticky top-0 z-20 border-b bg-background/90 backdrop-blur print:hidden">
+        <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:px-6">
+          <a
+            href={href({ page: "home" })}
+            className="flex flex-col leading-tight"
+          >
+            <span className="text-lg font-semibold tracking-tight">
+              FilmRoom
+            </span>
+            <span className="text-xs text-muted-foreground">
+              What was on, and not taken
+            </span>
+          </a>
+          <div className="flex flex-1 flex-wrap items-center justify-end gap-2">
+            <StyleControls />
+            <ModeBadge />
+          </div>
+        </div>
+      </header>
+      <main className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6">
+        {route.page === "home" ? <HomePage /> : <MatchLayout route={route} />}
+      </main>
+    </div>
+  )
+}
+
+function Loading() {
+  return (
+    <main
+      className="mx-auto flex max-w-3xl flex-col gap-4 p-6"
+      aria-label="Loading"
+    >
+      <Skeleton className="h-10 w-48" />
+      <Skeleton className="h-28 w-full rounded-xl" />
+      <Skeleton className="h-28 w-full rounded-xl" />
     </main>
   )
 }

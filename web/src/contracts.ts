@@ -103,6 +103,7 @@ export interface Clock {
   type?: "clock"
   t_ms: number
   speed: number
+  playing: boolean
 }
 /**
  * This interface was referenced by `FilmRoomContracts`'s JSON-Schema

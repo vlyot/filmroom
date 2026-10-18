@@ -2,14 +2,16 @@ import logging
 from collections.abc import Callable
 from typing import Annotated, Literal
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, WebSocket
 from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 
 from filmroom.agents.facts import supported_languages
-from filmroom.agents.layer import AgentLayer
+from filmroom.agents.layer import AgentLayer, narration_for
+from filmroom.agents.overlay import overlay_events
 from filmroom.agents.session_pack import PackRequest
 from filmroom.api.engine_store import EngineStore
+from filmroom.api.replay import NARRATIVE_WAIT_S, ReplayChannel, ReplaySession
 from filmroom.api.store import FixtureStore, Store
 from filmroom.config import Settings
 from filmroom.contracts.models import (
@@ -21,6 +23,7 @@ from filmroom.contracts.models import (
     Match,
     MatchSummary,
     Narrative,
+    OverlayEvent,
     PositionsChunk,
     Possession,
     PossessionSummary,
@@ -30,6 +33,7 @@ from filmroom.contracts.models import (
     StyleLens,
     Verdict,
 )
+from filmroom.contracts.ws import ErrorMessage
 from filmroom.style import load_lens, presets, presets_by_id, public_lens, style_from_sliders, verdict
 
 SliderQuery = Annotated[float | None, Query(ge=0, le=1)]
@@ -162,6 +166,62 @@ def create_app(store: Store, cors_origins: list[str], agents: AgentLayer | None 
             return await agents.packs.build(request)
         except KeyError as missing:
             raise HTTPException(status_code=404, detail=str(missing.args[0])) from missing
+
+    @app.get("/matches/{match_id}/overlay")
+    async def overlay(match_id: str, style: str | None = None) -> list[OverlayEvent]:
+        """One event per flagged moment under a preset (the reference by default), for broadcast graphics:
+        when it happened, the chosen and best options, and a fan caption in every supported language. Serves
+        cached verified captions or templates; never starts LLM work."""
+        style_id = style or load_lens().presets[0].id
+        match, possessions = await run_in_threadpool(
+            _found, lambda: (store.match(match_id), store.match_possessions(match_id))
+        )
+        return _found(lambda: overlay_events(possessions, match, agents.narratives, style_id))
+
+    @app.websocket("/matches/{match_id}/replay")
+    async def replay(
+        websocket: WebSocket,
+        match_id: str,
+        style: str | None = None,
+        audience: Audience = "coach",
+        language: str = "en",
+        speed: float = 1.0,
+        from_ms: int = 0,
+    ) -> None:
+        """Plays the match on a clock (speed 1–10): clock ticks, positions at 10 Hz and each flagged
+        possession as the clock passes its end, with its narrative under `style`, `audience` and `language`.
+        A pending narrative follows as a `narrative` message once generated. Control messages play, pause,
+        seek (ms) and change speed."""
+        await websocket.accept()
+        channel = ReplayChannel(websocket)
+        style_id = style or load_lens().presets[0].id
+        try:
+            if language not in supported_languages():
+                raise KeyError(f"unsupported language: {language}")
+            if style_id not in presets_by_id(load_lens()):
+                raise KeyError(f"unknown style: {style_id}")
+            match, possessions = await run_in_threadpool(
+                lambda: (store.match(match_id), store.match_possessions(match_id))
+            )
+        except KeyError as missing:
+            await channel.send([ErrorMessage(message=str(missing.args[0]))])
+            await websocket.close(code=1008)
+            return
+
+        async def positions(possession_id: str) -> PositionsChunk | None:
+            try:
+                return await run_in_threadpool(store.positions, possession_id)
+            except KeyError:
+                return None
+
+        def narrate(possession: Possession) -> Narrative:
+            request = narration_for(possession, match, style_id, audience, language)
+            narrative = agents.narratives.flagged(request)
+            if narrative.status == "pending":
+                channel.push_when_ready(agents.narratives.ready(request, NARRATIVE_WAIT_S))
+            return narrative
+
+        await channel.run(ReplaySession(possessions, match.duration_ms, positions, narrate, speed, from_ms))
 
     app.router.routes.extend(agents.mcp_routes())
     return app

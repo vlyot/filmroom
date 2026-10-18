@@ -22,7 +22,7 @@ from filmroom.contracts.models import (
 from filmroom.data.catalog import LOADER_VERSION, Catalog, MatchData, match_slug
 from filmroom.engine import ENGINE_VERSION
 from filmroom.engine.analyse import analyse_match
-from filmroom.engine.assemble import match_view, positions_chunk
+from filmroom.engine.assemble import match_view, possession_positions
 from filmroom.engine.pass_model import EngineModels
 from filmroom.engine.training import fit_lomo, load_rows
 from filmroom.engine.turning_point import EngineParams, load_params
@@ -112,4 +112,4 @@ class EngineStore:
 
     def positions(self, possession_id: str) -> PositionsChunk:
         p = self.possession(possession_id)
-        return positions_chunk(self._md(p.match_id), p.id, p.start_frame, p.end_frame)
+        return possession_positions(self._md(p.match_id), p)

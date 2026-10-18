@@ -17,6 +17,7 @@ dependencies = [
     "pydantic>=2.9",
     "pydantic-settings>=2.6",
     "uvicorn>=0.32",
+    "websockets>=15",
 ]
 
 [project.scripts]

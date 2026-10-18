@@ -45,6 +45,14 @@ Without `MISTRAL_API_KEY` everything still works on templates, and the analyst s
 
 What the verifier can't promise: it checks numbers, names, slots and claims, not every shade of meaning. A sentence can still use a slot loosely ("a pass" where the best option was a dribble), and a real name that ends like an ordinary word ("-ando", "-ing") could open a sentence.
 
+## Web app
+
+`web/` (React 19, Vite, shadcn/ui) is the product: a match replay that flags possessions as they end, a breakdown of each flagged moment (pitch replay with option lanes, danger curve, options ranked under the style, factor by factor), style controls (six presets or four custom sliders), coach / player / fan in English or Spanish, the session pack, ask-the-analyst and the overlay feed.
+
+- **Two data sources, one app.** With `VITE_API_URL` set and the API answering, the app is live: REST for data and a WebSocket replay (`/matches/{id}/replay`) that plays the stored analyses on a match clock (1×–10×), streams positions at 10 Hz, sends each flag as the clock passes the possession's end and pushes the verified narrative once it is written. Otherwise, or as soon as the API stops answering, it reads the static bundle and plays the same replay in the browser. The badge in the header says which, and switches by hand for a fallback drill.
+- **Verdicts are computed in the browser.** `web/src/lib/lens.ts` and `web/src/lib/narrative.ts` port the style scoring and the slot filling; `contracts/parity.json` (written by `tests/web_parity.py` from the synthetic match) pins them to the Python, and both test suites check it. Slider drags never wait on the network, and offline mode judges custom styles too.
+- **Overlay feed** (`/matches/{id}/overlay?style=`): one event per flagged moment with a fan caption in every language, filled from the same engine slots. It serves cached verified captions or templates and never starts LLM work.
+
 ## Common commands
 
 ```bash
@@ -52,6 +60,8 @@ uv run pytest                                  # tests (real-data tests skip wit
 uv run python -m filmroom.contracts.export     # regenerate contracts/schema.json + openapi.json
 uv run python scripts/build_fixtures.py        # local fixtures from the real data (gitignored)
 uv run python scripts/export_bundle.py --public  # static bundle without position data
+uv run python scripts/export_bundle.py --store engine --matches 2019_09_09_001,2019_09_14_001  # bundle from engine output
+uv run python -m tests.web_parity              # regenerate contracts/parity.json after a lens or slot change
 uv run python scripts/analyse_matches.py       # analyse every match into the engine cache (gitignored)
 uv run filmroom-eval                           # what was on instead: engine alternatives vs the labels
 uv run filmroom-eval --thresholds              # refit the flag threshold over all matches (no labels); writes engine/params.json
@@ -68,7 +78,9 @@ Web app (`web/`, React + Vite + shadcn/ui):
 cd web
 npm install
 npm run gen:contracts   # regenerate src/contracts.ts from contracts/schema.json
-npm run dev             # reads the static bundle from public/bundle
+npm test                # unit and parity tests (Vitest)
+npm run dev             # the static bundle in public/bundle; copy .env.example to .env.local to use the API
+VITE_BASE=/prem-league/ npm run build   # for GitHub Pages (hash routes, so deep links work there)
 ```
 
 Anything derived from the SoccER data (`fixtures/possessions`, `fixtures/matches`, `web/public/bundle`, `.cache`) is generated locally and gitignored; the dataset has no licence for redistribution.

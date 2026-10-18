@@ -80,10 +80,40 @@ class NarrativeService:
         self._submit(key, request, ON_DEMAND)
         return template.model_copy(update={"status": "pending"})
 
+    def peek(self, request: NarrationRequest) -> Narrative:
+        """The cached narrative or the template, without queueing anything: for views that list many moments
+        at once (the overlay feed), so opening one never spends allowance."""
+        key = self._key(request)
+        if key and (cached := self.cache.get(key, Narrative)):
+            return cached
+        return request.template()
+
     def enqueue_flagged(self, request: NarrationRequest) -> None:
         key = self._key(request)
         if key and self.live and not self.cache.get(key, Narrative):
             self._submit(key, request, FLAG_TIME)
+
+    def flagged(self, request: NarrationRequest) -> Narrative:
+        """For a moment the live replay just flagged: queues it at flag-time priority (`get` would make it
+        on-demand) and returns the cached narrative, or the template, `pending` while its job is queued."""
+        self.enqueue_flagged(request)
+        narrative = self.peek(request)
+        if narrative.status == "template" and self._key(request) in self._queued:
+            return narrative.model_copy(update={"status": "pending"})
+        return narrative
+
+    async def ready(self, request: NarrationRequest, timeout: float) -> Narrative | None:
+        """Waits for the request's queued job, if it hasn't finished already: the narrative it produced, or
+        None when nothing was produced (dropped, failed, never queued) or the wait timed out."""
+        key = self._key(request)
+        if key is None:
+            return None
+        if (done := self._done.get(key)) is not None:
+            try:
+                await asyncio.wait_for(done.wait(), timeout)
+            except TimeoutError:
+                return None
+        return self.cache.get(key, Narrative)
 
     async def wait(self, request: NarrationRequest, timeout: float) -> Narrative:
         narrative = self.get(request)

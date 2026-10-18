@@ -11,6 +11,7 @@ class Clock(Contract):
     type: Literal["clock"] = "clock"
     t_ms: int
     speed: float
+    playing: bool
 
 
 class PositionsMessage(Contract):

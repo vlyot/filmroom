@@ -1,7 +1,10 @@
+import json
+
 import pytest
 from fastapi.testclient import TestClient
 
 from filmroom.api.app import create_app
+from filmroom.api.bundle import export_bundle
 from filmroom.api.engine_store import EngineStore
 from filmroom.contracts.models import (
     CONTRACT_VERSION,
@@ -44,7 +47,7 @@ def test_health_reports_the_engine_and_the_contract_version(client):
         "source": "engine",
         "llm": False,
     }
-    assert CONTRACT_VERSION == "0.4.0"
+    assert CONTRACT_VERSION == "0.5.0"
 
 
 def test_engine_store_serves_every_route(client):
@@ -130,3 +133,32 @@ def test_verdict_route_rejects_unknown_styles_unflagged_possessions_and_partial_
         create_app(_store(params=EngineParams(flag_threshold=10.0, severity_scale=1.0)), [])
     )
     assert unflagged.get(route, params={"style": STYLES[0].id}).status_code == 404
+
+
+def test_engine_bundle_exports_positions_for_every_possession_and_the_rest_only_for_flagged_ones(tmp_path):
+    out = tmp_path / "bundle"
+    flagged = export_bundle(_store(), out, public=False, match_ids=[SLUG])
+    possessions = [f for f in flagged.files if f.startswith("possessions/") and f.count("/") == 1]
+    assert len(possessions) == 3 and sum("/narrative/" in f for f in flagged.files) == 3 * 6 * 3 * 2
+    assert [m["id"] for m in json.loads((out / "matches.json").read_text())] == [SLUG]
+
+    unflagged = export_bundle(
+        _store(params=EngineParams(flag_threshold=1e9, severity_scale=1)), out, public=False
+    )
+    assert sum(f.endswith("/positions.json") for f in unflagged.files) == 3
+    assert not [f for f in unflagged.files if f.startswith("possessions/") and f.count("/") == 1]
+    assert not [f for f in unflagged.files if "/narrative/" in f]
+
+
+def test_engine_bundle_rejects_matches_the_store_does_not_have(tmp_path):
+    with pytest.raises(KeyError, match="nope"):
+        export_bundle(_store(), tmp_path / "bundle", public=True, match_ids=["nope"])
+
+
+def test_positions_run_past_the_last_decision_so_the_turning_point_is_on_screen(client):
+    for summary in client.get(f"/matches/{SLUG}/possessions").json():
+        possession = Possession.model_validate(client.get(f"/possessions/{summary['id']}").json())
+        chunk = PositionsChunk.model_validate(client.get(f"/possessions/{possession.id}/positions").json())
+        shown_until = chunk.t0_ms + (len(chunk.xy) - 1) * 1000 / chunk.hz
+        assert chunk.t0_ms <= possession.start_ms + 100
+        assert shown_until >= max(d.t_ms for d in possession.decisions)

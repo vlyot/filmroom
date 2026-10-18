@@ -33,4 +33,6 @@ jobs:
         run: npm run gen:contracts && git diff --exit-code src/contracts.ts
       - run: npm run lint
       - run: npm run typecheck
+      # Includes the parity tests: the browser's style scoring and slot filling against contracts/parity.json.
+      - run: npm test
       - run: npm run build

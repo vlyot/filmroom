@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "FilmRoom API",
-    "version": "0.4.0"
+    "version": "0.5.0"
   },
   "paths": {
     "/health": {
@@ -591,6 +591,66 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SessionPack"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/matches/{match_id}/overlay": {
+      "get": {
+        "summary": "Overlay",
+        "description": "One event per flagged moment under a preset (the reference by default), for broadcast graphics:\nwhen it happened, the chosen and best options, and a fan caption in every supported language. Serves\ncached verified captions or templates; never starts LLM work.",
+        "operationId": "overlay_matches__match_id__overlay_get",
+        "parameters": [
+          {
+            "name": "match_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Match Id"
+            }
+          },
+          {
+            "name": "style",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Style"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OverlayEvent"
+                  },
+                  "title": "Response Overlay Matches  Match Id  Overlay Get"
                 }
               }
             }
@@ -1246,6 +1306,53 @@
           "factors"
         ],
         "title": "Option"
+      },
+      "OverlayEvent": {
+        "properties": {
+          "t_ms": {
+            "type": "integer",
+            "title": "T Ms"
+          },
+          "possession_id": {
+            "type": "string",
+            "title": "Possession Id"
+          },
+          "moment_type": {
+            "type": "string",
+            "enum": [
+              "turning_point",
+              "shot",
+              "goal"
+            ],
+            "title": "Moment Type"
+          },
+          "chosen_option_id": {
+            "type": "string",
+            "title": "Chosen Option Id"
+          },
+          "best_option_id": {
+            "type": "string",
+            "title": "Best Option Id"
+          },
+          "captions": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Captions"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "t_ms",
+          "possession_id",
+          "moment_type",
+          "chosen_option_id",
+          "best_option_id",
+          "captions"
+        ],
+        "title": "OverlayEvent"
       },
       "PackMoment": {
         "properties": {

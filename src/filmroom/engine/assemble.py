@@ -3,7 +3,7 @@ possession's positions downsampled for the browser."""
 
 import numpy as np
 
-from filmroom.contracts.models import Match, PlayerRef, PositionsChunk, Team
+from filmroom.contracts.models import Match, PlayerRef, PositionsChunk, Possession, Team
 from filmroom.data.catalog import MatchData, match_slug
 from filmroom.data.positions import downsample
 
@@ -28,6 +28,18 @@ def match_view(md: MatchData) -> Match:
             for p in md.players
         ],
     )
+
+
+TAIL_MS = 1000
+
+
+def possession_positions(md: MatchData, possession: Possession, hz: int = 10) -> PositionsChunk:
+    """A possession's positions for the browser: from its start until a second after its last decision or its
+    last owner row, whichever is later. The final pass is often kicked after the last owner row, and the
+    viewer should see the decision and where the ball went."""
+    last = max([possession.end_frame, *(d.frame for d in possession.decisions)])
+    end = md.clock.frame_at(md.clock.ms_at(last) + TAIL_MS)
+    return positions_chunk(md, possession.id, possession.start_frame, end, hz)
 
 
 def positions_chunk(

@@ -180,6 +180,54 @@ def test_does_not_cache_llm_errors_and_backs_off():
     assert len(narrator.calls) == 1
 
 
+def test_peek_serves_the_cache_or_the_template_and_never_queues():
+    request, cache = _request(), JsonCache(None)
+    service = NarrativeService(RecordingNarrator(), cache)
+    assert service.peek(request).status == "template" and not service._heap
+    verified = request.template().model_copy(update={"status": "verified"})
+    cache.put(request.cache_key("recording"), verified)
+    assert service.peek(request) == verified
+
+
+def test_flagged_keeps_flag_time_priority_behind_on_demand_jobs():
+    narrator = RecordingNarrator()
+    service = NarrativeService(narrator, JsonCache(None), concurrency=1)
+    flagged, opened = _request(0, severity=0.9), _request(1)
+
+    async def go():
+        assert service.flagged(flagged).status == "pending"
+        service.get(opened)
+        service.start()
+        await _drain(service)
+        await service.stop()
+
+    asyncio.run(go())
+    assert narrator.calls == [opened, flagged]
+
+
+def test_flagged_returns_the_template_when_offline():
+    assert NarrativeService(None, JsonCache(None)).flagged(_request()).status == "template"
+
+
+def test_ready_returns_the_generated_narrative_or_none_when_the_job_is_dropped():
+    narrator = RecordingNarrator()
+    service = NarrativeService(narrator, JsonCache(None), concurrency=1, max_flagged=1)
+    kept, dropped = _request(0, severity=0.9), _request(1, severity=0.1)
+
+    async def go():
+        service.flagged(kept)
+        service.flagged(dropped)
+        service.start()
+        results = await asyncio.gather(service.ready(kept, 1), service.ready(dropped, 1))
+        await service.stop()
+        return results
+
+    kept_result, dropped_result = asyncio.run(go())
+    assert kept_result is not None and kept_result.status == "verified"
+    assert dropped_result is None
+    assert asyncio.run(service.ready(_request(2), 0.01)) is None
+
+
 def test_wait_returns_the_verified_narrative_or_the_pending_template_on_timeout():
     request = _request()
 

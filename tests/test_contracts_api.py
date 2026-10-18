@@ -31,7 +31,7 @@ def test_committed_contracts_match_the_code():
 
 
 def test_server_messages_discriminate_on_type():
-    msg = ServerMessage.model_validate({"type": "clock", "t_ms": 1000, "speed": 2.0})
+    msg = ServerMessage.model_validate({"type": "clock", "t_ms": 1000, "speed": 2.0, "playing": True})
     assert type(msg.root).__name__ == "Clock"
     assert ClientMessage.model_validate({"type": "control", "action": "pause"}).root.action == "pause"
 
@@ -86,17 +86,31 @@ def test_route_to_path_mirrors_routes():
     assert route_to_path("/possessions/a-1/positions") == "possessions/a-1/positions.json"
     params = {"style": "s", "audience": "fan", "language": "es"}
     assert route_to_path("/possessions/a-1/narrative", params) == "possessions/a-1/narrative/s.fan.es.json"
+    pack = {"team": 1, "period": "half", "style": "s", "audience": "coach", "language": "en"}
+    assert route_to_path("/matches/m/session-pack", pack) == "matches/m/session-pack/1.half.s.coach.en.json"
+    assert route_to_path("/matches/m/overlay", {"style": "s"}) == "matches/m/overlay/s.json"
 
 
 def test_full_bundle_files_equal_their_route_responses(mini_fixtures, tmp_path, client):
     manifest = export_bundle(FixtureStore(mini_fixtures), tmp_path / "bundle", public=False)
     assert any(f.endswith("/positions.json") for f in manifest.files)
     assert {"styles.json", "styles/lens.json"} <= set(manifest.files)
+    queries = {
+        "narrative": ("style", "audience", "language"),
+        "session-pack": ("team", "period", "style", "audience", "language"),
+        "overlay": ("style",),
+    }
     for rel in manifest.files:
-        route = "/" + rel.removesuffix(".json")
-        if "/narrative/" in rel:
-            continue
-        assert json.loads((tmp_path / "bundle" / rel).read_text(encoding="utf-8")) == client.get(route).json()
+        route, params = "/" + rel.removesuffix(".json"), None
+        if (kind := route.rsplit("/", 2)[-2]) in queries:
+            route, values = route.rsplit("/", 1)
+            params = dict(zip(queries[kind], values.split("."), strict=True))
+        body = json.loads((tmp_path / "bundle" / rel).read_text(encoding="utf-8"))
+        assert body == client.get(route, params=params).json()
+    match_queries = {
+        f.split("/")[2] for f in manifest.files if f.startswith("matches/") and f.count("/") == 3
+    }
+    assert match_queries == {"session-pack", "overlay"}
 
 
 def test_public_bundle_has_no_positions_or_coordinates(mini_fixtures, tmp_path):
@@ -109,3 +123,10 @@ def test_public_bundle_has_no_positions_or_coordinates(mini_fixtures, tmp_path):
             possession = Possession.model_validate_json((out / rel).read_bytes())
             assert all(o.target_xy is None for d in possession.decisions for o in d.options)
     assert BundleManifest.model_validate_json((out / "manifest.json").read_bytes()).files == manifest.files
+
+
+def test_web_parity_golden_is_current():
+    """Regenerate with: uv run python -m tests.web_parity"""
+    from tests.web_parity import GOLDEN, render_golden
+
+    assert GOLDEN.read_text(encoding="utf-8") == render_golden()

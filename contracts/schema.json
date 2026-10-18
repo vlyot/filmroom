@@ -1,5 +1,5 @@
 {
-  "x-contract-version": "0.4.0",
+  "x-contract-version": "0.5.0",
   "$defs": {
     "AnalystReply": {
       "additionalProperties": false,
@@ -183,11 +183,15 @@
         },
         "speed": {
           "type": "number"
+        },
+        "playing": {
+          "type": "boolean"
         }
       },
       "required": [
         "t_ms",
-        "speed"
+        "speed",
+        "playing"
       ],
       "title": "Clock",
       "type": "object"

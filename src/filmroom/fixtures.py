@@ -25,7 +25,7 @@ from filmroom.contracts.models import (
 from filmroom.data.catalog import MatchData, match_slug
 from filmroom.data.positions import BALL_PID, downsample, team_of
 from filmroom.data.textlog import PassComplete, PassStart, Shot
-from filmroom.engine.assemble import mmss, positions_chunk
+from filmroom.engine.assemble import mmss, possession_positions
 from filmroom.engine.pass_model import band
 from filmroom.eval.labels import LabelRecord
 from filmroom.eval.scoring import DecisionPoint, label_decision_idx
@@ -182,7 +182,7 @@ def build_possession(
         verdicts={s.id: verdict(tp, s, styles[0]) for s in styles},
         facts=facts,
     )
-    positions = positions_chunk(md, possession_id, label.start_frame, label.end_frame)
+    positions = possession_positions(md, possession)
     return FixturePossession(label_id=label.id, possession=possession, positions=positions)
 
 
