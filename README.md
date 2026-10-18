@@ -1,5 +1,9 @@
 # FilmRoom
 
+[![CI](https://github.com/vlyot/prem-league/actions/workflows/ci.yml/badge.svg)](https://github.com/vlyot/prem-league/actions/workflows/ci.yml)
+
+**Live:** https://vlyot.github.io/prem-league/ (GitHub Pages, backed by an API on Railway; it falls back to a static bundle if the API is down)
+
 AI film-room analyst for the Microsoft × Premier League "Inside the Game" hackathon. It finds the possessions where a clearly better option was available, judges the alternatives against a chosen tactical style, and explains them for coaches, players and fans.
 
 The engine computes; the LLM explains. Every number shown comes from the deterministic engine.
@@ -53,6 +57,13 @@ What the verifier can't promise: it checks numbers, names, slots and claims, not
 - **Verdicts are computed in the browser.** `web/src/lib/lens.ts` and `web/src/lib/narrative.ts` port the style scoring and the slot filling; `contracts/parity.json` (written by `tests/web_parity.py` from the synthetic match) pins them to the Python, and both test suites check it. Slider drags never wait on the network, and offline mode judges custom styles too.
 - **Overlay feed** (`/matches/{id}/overlay?style=`): one event per flagged moment with a fan caption in every language, filled from the same engine slots. It serves cached verified captions or templates and never starts LLM work.
 
+## Deployment
+
+- **GitHub Pages** serves the web app (the submitted URL), built by `.github/workflows/pages.yml` after CI passes on `main`. CI has no SoccER data, so the static bundle is exported locally and kept on the `bundle` GitHub release (`scripts/publish_bundle.py`); the workflow refuses a bundle exported under another contract version, so offline mode can't drift from the API.
+- **Railway** runs the API from the `Dockerfile` (one replica, always on), deployed by CI's `deploy-api` job with `railway up` once every check has passed. A deployment that fails its `/health` check leaves the previous one serving.
+- **Postgres with pgvector** on Railway, over private networking. Railway holds no SoccER data: `scripts/seed_db.py` copies engine output (matches, possessions, positions and situation vectors) from a machine that has the dataset, in one transaction. The API (`STORE=database`) reads only that, so it needs neither the dataset nor the engine's models and stays near 125 MB. "Similar situations" is a pgvector cosine search. The narrative cache and the LLM token ledger live there too and survive reseeds and redeploys, so the daily token cap holds across restarts.
+- **Monitoring:** every LLM call, narrative and analyst reply is a JSON log line (Railway keeps them), and `/metrics` counts the same events: requests and server errors, LLM latency, tokens today against the cap and this month against Mistral's $10 allowance, narrative and analyst fallback rates, verifier rejections and live replays. The app's **Service status** page (from the mode badge) shows them; CPU and memory are on Railway's dashboard.
+
 ## Common commands
 
 ```bash
@@ -70,6 +81,14 @@ uv run filmroom-eval --lens                    # preset disagreement, flip attri
 uv run uvicorn filmroom.api.app:app --reload   # API on :8000 (fixtures; STORE=engine for live analysis); MCP at /mcp
 uv run python scripts/prewarm_narratives.py --match 2019_09_09_001 --top 5   # narrative cache: dry run, add --yes to spend
 RUN_LLM_TESTS=1 uv run pytest tests/test_llm_live.py   # a few live Mistral calls (skipped otherwise)
+
+# Database store tests: a throwaway pgvector Postgres (they reset its public schema)
+docker run -d --name filmroom-pg -e POSTGRES_PASSWORD=postgres -p 55432:5432 pgvector/pgvector:pg17
+TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:55432/postgres uv run pytest
+
+# Seed Railway's Postgres (dry run; add --yes to write) and publish the Pages bundle (dry run; add --yes)
+railway run --service Postgres -- uv run python scripts/seed_db.py --url-env DATABASE_PUBLIC_URL --matches 2019_09_09_001,2019_09_10_001,2019_09_14_001
+uv run python scripts/publish_bundle.py --matches 2019_09_09_001,2019_09_10_001,2019_09_14_001
 ```
 
 Web app (`web/`, React + Vite + shadcn/ui):

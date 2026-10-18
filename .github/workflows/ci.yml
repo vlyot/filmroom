@@ -7,6 +7,18 @@ on:
 jobs:
   python:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      # The database store, cache and ledger tests (marked pg) run against it.
+      TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
@@ -36,3 +48,28 @@ jobs:
       # Includes the parity tests: the browser's style scoring and slot filling against contracts/parity.json.
       - run: npm test
       - run: npm run build
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t filmroom-api .
+      - name: The image starts and answers its healthcheck
+        run: |
+          docker run -d --name api -p 8000:8000 filmroom-api
+          for i in $(seq 1 30); do curl -sf localhost:8000/health && exit 0; sleep 1; done
+          docker logs api
+          exit 1
+
+  # Railway builds the same Dockerfile; a deployment that fails its healthcheck leaves the previous one serving.
+  deploy-api:
+    needs: [python, web, docker]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    concurrency: deploy-api
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm install --global @railway/cli@4.58.0
+      - run: railway up --ci --service api --environment production --message "${GITHUB_SHA::7}"
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}

@@ -3,6 +3,7 @@ import { useSyncExternalStore } from "react"
 
 export type Route =
   | { page: "home" }
+  | { page: "status" }
   | { page: "replay"; matchId: string }
   | { page: "possession"; matchId: string; possessionId: string }
   | { page: "pack"; matchId: string }
@@ -14,6 +15,7 @@ export function parseRoute(hash: string): Route {
     .split("/")
     .filter(Boolean)
     .map(decodeURIComponent)
+  if (parts[0] === "status") return { page: "status" }
   if (parts[0] !== "m" || !parts[1]) return { page: "home" }
   const matchId = parts[1]
   if (parts[2] === "p" && parts[3])
@@ -27,6 +29,8 @@ export function href(route: Route): string {
   switch (route.page) {
     case "home":
       return "#/"
+    case "status":
+      return "#/status"
     case "replay":
       return `#/m/${encodeURIComponent(route.matchId)}`
     case "possession":

@@ -1,4 +1,4 @@
-import type { AnalystRequest, Health } from "@/contracts"
+import type { AnalystRequest, Health, MetricsReport } from "@/contracts"
 import type { ReplayParams } from "@/lib/replay/types"
 import { Listeners } from "@/lib/replay/types"
 import { ApiSource } from "@/lib/source/api"
@@ -105,6 +105,19 @@ export class FallbackSource implements DataSource {
   analyst = (request: AnalystRequest) => this.call((s) => s.analyst(request))
   replay = (matchId: string, params: ReplayParams) =>
     this.active.replay(matchId, params)
+
+  /** The live API's own counters; null offline, where there is no service to report on. An API that stops
+   * answering switches the app to the bundle, as any other request would. */
+  async metrics(): Promise<MetricsReport | null> {
+    if (this.state.mode !== "live" || !this.api) return null
+    try {
+      return await this.api.metrics()
+    } catch (error) {
+      if (!(error instanceof Unavailable)) throw error
+      this.goOffline(true)
+      return null
+    }
+  }
 
   /** The live overlay feed's URL, for broadcast systems to poll; null offline. */
   overlayUrl(matchId: string, style: string): string | null {

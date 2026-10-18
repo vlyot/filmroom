@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "FilmRoom API",
-    "version": "0.5.0"
+    "version": "0.6.0"
   },
   "paths": {
     "/health": {
@@ -16,6 +16,25 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metrics": {
+      "get": {
+        "summary": "Metrics Report",
+        "description": "Counters since start-up: requests, LLM calls, tokens against the daily cap and the monthly\nallowance, how often narratives and analyst replies fell back, and replay sockets.",
+        "operationId": "metrics_report_metrics_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetricsReport"
                 }
               }
             }
@@ -1022,6 +1041,122 @@
         ],
         "title": "Health"
       },
+      "Latency": {
+        "properties": {
+          "p50_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "P50 Ms"
+          },
+          "p95_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "P95 Ms"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "p50_ms",
+          "p95_ms"
+        ],
+        "title": "Latency",
+        "description": "Over the most recent samples (up to 500); null before the first."
+      },
+      "LlmMetrics": {
+        "properties": {
+          "calls": {
+            "type": "integer",
+            "title": "Calls"
+          },
+          "errors": {
+            "type": "integer",
+            "title": "Errors"
+          },
+          "latency": {
+            "$ref": "#/components/schemas/Latency"
+          },
+          "tokens_today": {
+            "type": "integer",
+            "title": "Tokens Today"
+          },
+          "daily_token_limit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Daily Token Limit"
+          },
+          "month_calls": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Month Calls"
+          },
+          "month_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Month Tokens"
+          },
+          "month_cost_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Month Cost Usd"
+          },
+          "allowance_usd": {
+            "type": "number",
+            "title": "Allowance Usd"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "calls",
+          "errors",
+          "latency",
+          "tokens_today",
+          "daily_token_limit",
+          "month_calls",
+          "month_tokens",
+          "month_cost_usd",
+          "allowance_usd"
+        ],
+        "title": "LlmMetrics",
+        "description": "Every model call, each step of a tool-calling loop included. The month's figures come from the token\nledger (null without a database); the cost is an estimate at Mistral Small 4 prices, against the monthly\nincluded allowance."
+      },
       "Match": {
         "properties": {
           "id": {
@@ -1127,6 +1262,62 @@
           "teams"
         ],
         "title": "MatchSummary"
+      },
+      "MetricsReport": {
+        "properties": {
+          "contract_version": {
+            "type": "string",
+            "title": "Contract Version"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "fixtures",
+              "engine",
+              "database"
+            ],
+            "title": "Source"
+          },
+          "uptime_s": {
+            "type": "integer",
+            "title": "Uptime S"
+          },
+          "requests": {
+            "$ref": "#/components/schemas/RequestMetrics"
+          },
+          "llm": {
+            "$ref": "#/components/schemas/LlmMetrics"
+          },
+          "narratives": {
+            "$ref": "#/components/schemas/OutcomeMetrics"
+          },
+          "analyst": {
+            "$ref": "#/components/schemas/OutcomeMetrics"
+          },
+          "replays_active": {
+            "type": "integer",
+            "title": "Replays Active"
+          },
+          "replays_total": {
+            "type": "integer",
+            "title": "Replays Total"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "contract_version",
+          "source",
+          "uptime_s",
+          "requests",
+          "llm",
+          "narratives",
+          "analyst",
+          "replays_active",
+          "replays_total"
+        ],
+        "title": "MetricsReport",
+        "description": "The API's own counters since start-up, for monitoring alongside Railway's CPU and memory graphs."
       },
       "Narrative": {
         "properties": {
@@ -1306,6 +1497,55 @@
           "factors"
         ],
         "title": "Option"
+      },
+      "OutcomeMetrics": {
+        "properties": {
+          "verified": {
+            "type": "integer",
+            "title": "Verified"
+          },
+          "fallback": {
+            "type": "integer",
+            "title": "Fallback"
+          },
+          "rejected": {
+            "type": "integer",
+            "title": "Rejected"
+          },
+          "fallback_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fallback Rate"
+          },
+          "rejection_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rejection Rate"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "verified",
+          "fallback",
+          "rejected",
+          "fallback_rate",
+          "rejection_rate"
+        ],
+        "title": "OutcomeMetrics",
+        "description": "LLM-written outputs since start-up. `fallback`: a template or canned line was served instead, after\nthe verifier rejected the draft twice or the LLM call failed. `rejected`: outputs where the verifier\nrejected at least one draft, retried or not. Rates are null before the first output."
       },
       "OverlayEvent": {
         "properties": {
@@ -1743,6 +1983,29 @@
           "provenance"
         ],
         "title": "PossessionSummary"
+      },
+      "RequestMetrics": {
+        "properties": {
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "errors": {
+            "type": "integer",
+            "title": "Errors"
+          },
+          "latency": {
+            "$ref": "#/components/schemas/Latency"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "count",
+          "errors",
+          "latency"
+        ],
+        "title": "RequestMetrics"
       },
       "RuleSet": {
         "properties": {

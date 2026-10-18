@@ -9,7 +9,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-CONTRACT_VERSION = "0.5.0"
+CONTRACT_VERSION = "0.6.0"
 
 Side = Literal[0, 1]
 Band = Literal["low", "medium", "high"]
@@ -239,11 +239,69 @@ class OverlayEvent(Contract):
     captions: dict[str, str]
 
 
+StoreSource = Literal["fixtures", "engine", "database"]
+
+
 class Health(Contract):
     status: Literal["ok"]
     contract_version: str
-    source: Literal["fixtures", "engine", "database"]
+    source: StoreSource
     llm: bool  # whether narratives are generated and the analyst answers
+
+
+class Latency(Contract):
+    """Over the most recent samples (up to 500); null before the first."""
+
+    p50_ms: float | None
+    p95_ms: float | None
+
+
+class RequestMetrics(Contract):
+    count: int
+    errors: int  # 5xx answers
+    latency: Latency
+
+
+class LlmMetrics(Contract):
+    """Every model call, each step of a tool-calling loop included. The month's figures come from the token
+    ledger (null without a database); the cost is an estimate at Mistral Small 4 prices, against the monthly
+    included allowance."""
+
+    calls: int
+    errors: int
+    latency: Latency
+    tokens_today: int
+    daily_token_limit: int | None
+    month_calls: int | None
+    month_tokens: int | None
+    month_cost_usd: float | None
+    allowance_usd: float
+
+
+class OutcomeMetrics(Contract):
+    """LLM-written outputs since start-up. `fallback`: a template or canned line was served instead, after
+    the verifier rejected the draft twice or the LLM call failed. `rejected`: outputs where the verifier
+    rejected at least one draft, retried or not. Rates are null before the first output."""
+
+    verified: int
+    fallback: int
+    rejected: int
+    fallback_rate: float | None
+    rejection_rate: float | None
+
+
+class MetricsReport(Contract):
+    """The API's own counters since start-up, for monitoring alongside Railway's CPU and memory graphs."""
+
+    contract_version: str
+    source: StoreSource
+    uptime_s: int
+    requests: RequestMetrics
+    llm: LlmMetrics
+    narratives: OutcomeMetrics
+    analyst: OutcomeMetrics
+    replays_active: int
+    replays_total: int
 
 
 class ChatTurn(Contract):

@@ -1,16 +1,20 @@
 """Situation vectors for "similar situations": a fixed-order vector per flagged possession, built only from
 the contract (what kind of decision, where it ended, how, and the style factors of what was chosen and of
-what the reference style rated best), compared by cosine similarity. Brute force is fine at a few hundred
-flagged moments per match; Phase 5 stores the same vectors in pgvector."""
+what the style rated best), compared by cosine similarity. The file and engine stores search by brute force
+(`similar_in`); the database store keeps the same vectors in pgvector."""
 
-from typing import get_args
+from typing import TYPE_CHECKING, get_args
 
 import numpy as np
 
 from filmroom.contracts.models import ActionKind, FactorName, Possession
 
+if TYPE_CHECKING:
+    from filmroom.api.store import Store
+
 ZONES = ("own", "mid", "final")
 OUTCOME_GROUPS = {"lost_pass": 0, "lost_tackle": 0, "shot": 1, "goal": 1, "out": 2, "stoppage": 2}
+SITUATION_DIM = len(get_args(ActionKind)) + len(ZONES) + 3 + 2 * len(get_args(FactorName))
 
 
 def _one_hot(index: int, size: int) -> list[float]:
@@ -44,3 +48,13 @@ def most_similar(
     scores = matrix @ query / (np.linalg.norm(matrix, axis=1) * np.linalg.norm(query))
     order = np.argsort(-scores, kind="stable")[:k]
     return [(pool[i], round(float(scores[i]), 4)) for i in order]
+
+
+def similar_in(
+    store: "Store", possession_id: str, style_id: str, k: int, all_matches: bool
+) -> list[tuple[Possession, float]]:
+    """`Store.similar` by brute force over the store's possessions: the target's match, or every match."""
+    target = store.possession(possession_id)
+    match_ids = [m.id for m in store.matches()] if all_matches else [target.match_id]
+    pool = [p for m in match_ids for p in store.match_possessions(m)]
+    return most_similar(target, pool, style_id, k)

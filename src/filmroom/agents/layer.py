@@ -9,7 +9,7 @@ from mcp.server.fastmcp import FastMCP
 from starlette.routing import BaseRoute
 
 from filmroom.agents.analyst import Analyst, http_tools
-from filmroom.agents.cache import JsonCache
+from filmroom.agents.cache import Cache, JsonCache, open_cache
 from filmroom.agents.llm import LlmBudget, make_chat_client
 from filmroom.agents.mcp_server import build_mcp
 from filmroom.agents.narratives import NarrativeService
@@ -43,11 +43,18 @@ class AgentLayer:
 
     @classmethod
     def from_settings(cls, settings: Settings, store: Store) -> "AgentLayer":
-        budget = LlmBudget(settings.llm_daily_token_limit)
+        """With DATABASE_URL, the cache and the token ledger live in Postgres and survive redeploys."""
+        ledger = None
+        if settings.database_url is not None:
+            from filmroom.db.schema import open_pool
+            from filmroom.db.usage import UsageLedger
+
+            ledger = UsageLedger(open_pool(settings.database_url.get_secret_value()))
+        budget = LlmBudget(settings.llm_daily_token_limit, ledger=ledger)
         client = make_chat_client(settings, budget)
         narrator = Narrator(client, settings.mistral_chat_model) if client else None
         model = settings.mistral_chat_model
-        cache = JsonCache(settings.cache_dir / "agents")
+        cache = open_cache(settings)
         narratives = NarrativeService(narrator, cache, budget, model, settings.narrator_concurrency)
         return cls(
             store,
@@ -58,7 +65,7 @@ class AgentLayer:
         )
 
     @classmethod
-    def offline(cls, store: Store, cache: JsonCache | None = None, model: str | None = None) -> "AgentLayer":
+    def offline(cls, store: Store, cache: Cache | None = None, model: str | None = None) -> "AgentLayer":
         cache = cache or JsonCache(None)
         narratives = NarrativeService(None, cache, model=model)
         return cls(

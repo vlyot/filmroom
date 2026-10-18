@@ -4,6 +4,7 @@ import type {
   Health,
   Match,
   MatchSummary,
+  MetricsReport,
   Narrative,
   OverlayEvent,
   PositionsChunk,
@@ -83,6 +84,11 @@ export class ApiSource implements DataSource {
 
   overlayUrl(matchId: string, style: string): string {
     return `${this.base}/matches/${matchId}/overlay?${query({ style })}`
+  }
+
+  // Not memoised: the status page polls it.
+  metrics(): Promise<MetricsReport> {
+    return requestJson(`${this.base}/metrics`)
   }
 
   analyst(request: AnalystRequest): Promise<AnalystReply> {

@@ -16,7 +16,7 @@ from fastapi.testclient import TestClient
 from filmroom.agents.facts import supported_languages
 from filmroom.agents.layer import AgentLayer
 from filmroom.api.app import create_app
-from filmroom.api.store import Store
+from filmroom.api.store import Store, strip_coordinates
 from filmroom.contracts.models import CONTRACT_VERSION, Audience, BundleManifest
 from filmroom.style import load_lens, presets_by_id
 
@@ -28,13 +28,6 @@ def route_to_path(route: str, params: dict[str, str | int] | None = None) -> str
     if params:
         return f"{path}/{'.'.join(str(v) for v in params.values())}.json"
     return f"{path}.json"
-
-
-def _strip_coordinates(possession: dict) -> dict:
-    for decision in possession["decisions"]:
-        for option in decision["options"]:
-            option["target_xy"] = None
-    return possession
 
 
 Request = tuple[str, dict[str, str | int] | None]
@@ -100,7 +93,7 @@ def export_bundle(
         if route == "/matches":
             body = [m for m in body if m["id"] in matches]
         if public and route.startswith("/possessions/") and route.count("/") == 2:
-            body = _strip_coordinates(body)
+            body = strip_coordinates(body)
         rel = route_to_path(route, params)
         target = out_dir / rel
         target.parent.mkdir(parents=True, exist_ok=True)

@@ -19,7 +19,7 @@ import logging
 import time
 from dataclasses import dataclass, field
 
-from filmroom.agents.cache import JsonCache
+from filmroom.agents.cache import Cache
 from filmroom.agents.llm import LlmBudget
 from filmroom.agents.narrator import NarrationRequest, Narrator
 from filmroom.contracts.models import Narrative
@@ -39,7 +39,7 @@ class NarrativeService:
     def __init__(
         self,
         narrator: Narrator | None,
-        cache: JsonCache,
+        cache: Cache,
         budget: LlmBudget | None = None,
         model: str | None = None,
         concurrency: int = 2,

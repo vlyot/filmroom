@@ -1,10 +1,13 @@
-"""Data sources behind the API. FixtureStore serves files built by scripts/build_fixtures.py; a database store
-replaces it in Phase 5. Lookups that find nothing raise KeyError, which the API turns into 404. Narratives
-come from the agent layer, not the stores."""
+"""Data sources behind the API: FixtureStore serves files built by scripts/build_fixtures.py, EngineStore
+analyses matches from the dataset, and DatabaseStore serves engine output seeded into Postgres (the deployed
+API, which has no dataset). Lookups that find nothing raise KeyError, which the API turns into 404.
+Narratives come from the agent layer, not the stores."""
 
 from pathlib import Path
 from typing import Protocol
 
+from filmroom.agents.situations import similar_in
+from filmroom.config import Settings
 from filmroom.contracts.models import (
     Contract,
     Match,
@@ -30,6 +33,35 @@ class Store(Protocol):
     def match_possessions(self, match_id: str) -> list[Possession]: ...
     def possession(self, possession_id: str) -> Possession: ...
     def positions(self, possession_id: str) -> PositionsChunk: ...
+
+    def similar(
+        self, possession_id: str, style_id: str, k: int, all_matches: bool
+    ) -> list[tuple[Possession, float]]:
+        """The k flagged moments most like this one under a preset, from its match or every match, with their
+        cosine similarity; most similar first, the possession itself left out."""
+        ...
+
+
+def open_store(settings: Settings) -> Store:
+    """The store `settings.store` names. The engine and database stores are imported only when chosen, so
+    the deployed API never loads the engine's training code and local runs never need a database driver."""
+    if settings.store == "engine":
+        from filmroom.api.engine_store import EngineStore
+
+        return EngineStore.from_settings(settings)
+    if settings.store == "database":
+        from filmroom.api.db_store import DatabaseStore
+
+        return DatabaseStore.from_settings(settings)
+    return FixtureStore(settings.fixtures_dir)
+
+
+def strip_coordinates(possession: dict) -> dict:
+    """A possession's JSON for publishing without SoccER-derived positions: no option target coordinates."""
+    for decision in possession["decisions"]:
+        for option in decision["options"]:
+            option["target_xy"] = None
+    return possession
 
 
 def summary_of(possession: Possession) -> PossessionSummary:
@@ -76,3 +108,8 @@ class FixtureStore:
 
     def positions(self, possession_id: str) -> PositionsChunk:
         return self.fixture(possession_id).positions
+
+    def similar(
+        self, possession_id: str, style_id: str, k: int, all_matches: bool
+    ) -> list[tuple[Possession, float]]:
+        return similar_in(self, possession_id, style_id, k, all_matches)

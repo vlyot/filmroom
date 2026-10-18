@@ -9,6 +9,7 @@ from pathlib import Path
 
 from pydantic import TypeAdapter
 
+from filmroom.agents.situations import similar_in
 from filmroom.api.store import summary_of
 from filmroom.config import Settings
 from filmroom.contracts.models import (
@@ -113,3 +114,8 @@ class EngineStore:
     def positions(self, possession_id: str) -> PositionsChunk:
         p = self.possession(possession_id)
         return possession_positions(self._md(p.match_id), p)
+
+    def similar(
+        self, possession_id: str, style_id: str, k: int, all_matches: bool
+    ) -> list[tuple[Possession, float]]:
+        return similar_in(self, possession_id, style_id, k, all_matches)

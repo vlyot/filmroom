@@ -26,7 +26,7 @@ from agent_framework import (
 )
 from pydantic import BaseModel, ValidationError
 
-from filmroom.agents.cache import JsonCache, cache_key
+from filmroom.agents.cache import Cache, cache_key
 from filmroom.agents.facts import action_phrase, load_language, player_name
 from filmroom.agents.llm import purpose
 from filmroom.agents.narratives import NarrativeService
@@ -155,7 +155,7 @@ class CompareStyles(Executor):
 
 
 class GroupThemes(Executor):
-    def __init__(self, client: SupportsChatGetResponse | None, model: str | None, cache: JsonCache):
+    def __init__(self, client: SupportsChatGetResponse | None, model: str | None, cache: Cache):
         super().__init__(id="group_themes")
         self.agent = Agent(client=client, name="themes", instructions=prompt("themes.md")) if client else None
         self.model = model
@@ -287,7 +287,7 @@ class SessionPackBuilder:
         narratives: NarrativeService,
         client: SupportsChatGetResponse | None,
         model: str | None,
-        cache: JsonCache,
+        cache: Cache,
     ):
         self.store = store
         self.narratives = narratives

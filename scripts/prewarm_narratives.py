@@ -16,17 +16,16 @@ from typing import get_args
 
 from filmroom.agents.facts import supported_languages
 from filmroom.agents.layer import AgentLayer
+from filmroom.agents.llm import estimated_cost
 from filmroom.agents.narrator import NarrationRequest
-from filmroom.api.engine_store import EngineStore
-from filmroom.api.store import FixtureStore
+from filmroom.api.store import open_store
 from filmroom.config import Settings
 from filmroom.contracts.models import Audience, Narrative
 from filmroom.style import load_lens, presets_by_id
 
-# Measured on a live narrator call (about 900 tokens in, 100 out), with headroom for retries; Mistral Small 4
-# costs $0.15 / $0.60 per million tokens in / out.
+# Measured on a live narrator call (about 900 tokens in, 100 out), with headroom for retries.
 TOKENS_IN, TOKENS_OUT = 1200, 150
-COST_PER_CALL = (TOKENS_IN * 0.15 + TOKENS_OUT * 0.60) / 1_000_000
+COST_PER_CALL = estimated_cost(TOKENS_IN, TOKENS_OUT)
 
 
 def _targets(args: argparse.Namespace, layer: AgentLayer) -> list[str]:
@@ -70,9 +69,7 @@ def main() -> None:
     args = parser.parse_args()
 
     settings = Settings()
-    engine = settings.store == "engine"
-    store = EngineStore.from_settings(settings) if engine else FixtureStore(settings.fixtures_dir)
-    layer = AgentLayer.from_settings(settings, store)
+    layer = AgentLayer.from_settings(settings, open_store(settings))
     if layer.narratives.narrator is None:
         raise SystemExit("MISTRAL_API_KEY is not set")
     model = layer.narratives.model

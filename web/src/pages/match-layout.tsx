@@ -15,7 +15,7 @@ import { PossessionPage } from "@/pages/possession"
 import { ReplayPage } from "@/pages/replay"
 import { SessionPackPage } from "@/pages/session-pack"
 
-type MatchRoute = Exclude<Route, { page: "home" }>
+type MatchRoute = Exclude<Route, { page: "home" } | { page: "status" }>
 
 export type MatchData = { match: Match; possessions: PossessionSummary[] }
 

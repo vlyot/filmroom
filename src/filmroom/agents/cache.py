@@ -1,17 +1,34 @@
 """Results of LLM work (narratives, themes), keyed by a hash of everything that went into them: facts,
 verdict, prompt version and model. A changed engine output or prompt makes a new key, so nothing stale is
-served. Files live under CACHE_DIR/agents (gitignored); Phase 5 puts a Postgres table behind the same two
-methods."""
+served. Files live under CACHE_DIR/agents (gitignored); with a database, a Postgres table sits behind the
+same two methods (filmroom.db.cache)."""
 
 import hashlib
 import json
 from pathlib import Path
+from typing import Protocol
 
 from pydantic import BaseModel
+
+from filmroom.config import Settings
 
 
 def cache_key(payload: dict) -> str:
     return hashlib.sha1(json.dumps(payload, sort_keys=True, default=str).encode()).hexdigest()
+
+
+class Cache(Protocol):
+    def get[M: BaseModel](self, key: str, model: type[M]) -> M | None: ...
+    def put(self, key: str, value: BaseModel) -> None: ...
+
+
+def open_cache(settings: Settings) -> Cache:
+    """Postgres when DATABASE_URL is set, files under CACHE_DIR/agents otherwise."""
+    if settings.database_url is not None:
+        from filmroom.db.cache import DbCache
+
+        return DbCache.from_settings(settings)
+    return JsonCache(settings.cache_dir / "agents")
 
 
 class JsonCache:

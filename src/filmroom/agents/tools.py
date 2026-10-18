@@ -4,7 +4,6 @@ docstrings are what the model reads as tool descriptions. Every number here come
 from pydantic import BaseModel
 
 from filmroom.agents.facts import action_phrase, player_name
-from filmroom.agents.situations import most_similar
 from filmroom.api.store import Store
 from filmroom.contracts.models import (
     Decision,
@@ -341,13 +340,11 @@ class EngineTools:
     ) -> list[SimilarMoment]:
         """Flagged moments most like this one (same kind of decision, where and how it ended, and the style
         factors of what was chosen and what was best), from the same match or from every match."""
-        target, _ = self._possession(possession_id)
-        match_ids = [m.id for m in self.store.matches()] if all_matches else [target.match_id]
-        matches = {m: self.store.match(m) for m in match_ids}
-        pool = [p for m in match_ids for p in self.store.match_possessions(m)]
-        reference = self._style(None).id
+        self._possession(possession_id)
+        found = self.store.similar(possession_id, self._style(None).id, min(limit, MAX_ROWS), all_matches)
+        matches = {m: self.store.match(m) for m in {p.match_id for p, _ in found}}
         similar = []
-        for p, similarity in most_similar(target, pool, reference, min(limit, MAX_ROWS)):
+        for p, similarity in found:
             decision = self._turning_point(p)
             similar.append(
                 SimilarMoment(

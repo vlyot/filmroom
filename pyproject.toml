@@ -14,6 +14,7 @@ dependencies = [
     "numpy>=2.1",
     "openpyxl>=3.1",
     "pandas>=2.2",
+    "psycopg[binary,pool]>=3.2",
     "pydantic>=2.9",
     "pydantic-settings>=2.6",
     "uvicorn>=0.32",
@@ -49,4 +50,5 @@ testpaths = ["tests"]
 markers = [
     "data: needs the real SoccER dataset (skipped when DATA_DIR is not available)",
     "llm: calls the live Mistral API and spends allowance (skipped unless RUN_LLM_TESTS=1)",
+    "pg: needs a Postgres with pgvector (skipped without TEST_DATABASE_URL); the test resets its public schema",
 ]

@@ -197,6 +197,35 @@ export interface Health {
   llm: boolean
 }
 /**
+ * Over the most recent samples (up to 500); null before the first.
+ *
+ * This interface was referenced by `FilmRoomContracts`'s JSON-Schema
+ * via the `definition` "Latency".
+ */
+export interface Latency {
+  p50_ms: number | null
+  p95_ms: number | null
+}
+/**
+ * Every model call, each step of a tool-calling loop included. The month's figures come from the token
+ * ledger (null without a database); the cost is an estimate at Mistral Small 4 prices, against the monthly
+ * included allowance.
+ *
+ * This interface was referenced by `FilmRoomContracts`'s JSON-Schema
+ * via the `definition` "LlmMetrics".
+ */
+export interface LlmMetrics {
+  calls: number
+  errors: number
+  latency: Latency
+  tokens_today: number
+  daily_token_limit: number | null
+  month_calls: number | null
+  month_tokens: number | null
+  month_cost_usd: number | null
+  allowance_usd: number
+}
+/**
  * This interface was referenced by `FilmRoomContracts`'s JSON-Schema
  * via the `definition` "Match".
  */
@@ -257,6 +286,47 @@ export interface MatchSummary {
    * @maxItems 2
    */
   teams: [Team, Team]
+}
+/**
+ * The API's own counters since start-up, for monitoring alongside Railway's CPU and memory graphs.
+ *
+ * This interface was referenced by `FilmRoomContracts`'s JSON-Schema
+ * via the `definition` "MetricsReport".
+ */
+export interface MetricsReport {
+  contract_version: string
+  source: "fixtures" | "engine" | "database"
+  uptime_s: number
+  requests: RequestMetrics
+  llm: LlmMetrics
+  narratives: OutcomeMetrics
+  analyst: OutcomeMetrics
+  replays_active: number
+  replays_total: number
+}
+/**
+ * This interface was referenced by `FilmRoomContracts`'s JSON-Schema
+ * via the `definition` "RequestMetrics".
+ */
+export interface RequestMetrics {
+  count: number
+  errors: number
+  latency: Latency
+}
+/**
+ * LLM-written outputs since start-up. `fallback`: a template or canned line was served instead, after
+ * the verifier rejected the draft twice or the LLM call failed. `rejected`: outputs where the verifier
+ * rejected at least one draft, retried or not. Rates are null before the first output.
+ *
+ * This interface was referenced by `FilmRoomContracts`'s JSON-Schema
+ * via the `definition` "OutcomeMetrics".
+ */
+export interface OutcomeMetrics {
+  verified: number
+  fallback: number
+  rejected: number
+  fallback_rate: number | null
+  rejection_rate: number | null
 }
 /**
  * `template` holds {fact.id} slots and `facts` holds their values for this style and language; the

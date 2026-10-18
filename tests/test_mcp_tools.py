@@ -108,6 +108,23 @@ def test_similar_situations_leave_out_the_query_and_are_deterministic(tools):
     assert len(situation_vector(target, REFERENCE.id)) == 3 + 3 + 3 + 8 + 8
 
 
+def test_similar_situations_ask_the_store_under_the_reference_style(tools):
+    calls = []
+
+    class Recording:
+        def __getattr__(self, name):
+            return getattr(tools.store, name)
+
+        def similar(self, *args):
+            calls.append(args)
+            return tools.store.similar(*args)
+
+    target = _flagged(tools)[0]
+    found = EngineTools(Recording()).search_similar_situations(target.id, limit=40, all_matches=True)
+    assert calls == [(target.id, REFERENCE.id, 25, True)]
+    assert found == tools.search_similar_situations(target.id, limit=40, all_matches=True)
+
+
 def test_tool_results_serialise_to_json(tools):
     possession = _flagged(tools)[0]
     json.dumps(tools.get_possession(possession.id).model_dump())

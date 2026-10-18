@@ -47,7 +47,7 @@ def test_health_reports_the_engine_and_the_contract_version(client):
         "source": "engine",
         "llm": False,
     }
-    assert CONTRACT_VERSION == "0.5.0"
+    assert CONTRACT_VERSION == "0.6.0"
 
 
 def test_engine_store_serves_every_route(client):

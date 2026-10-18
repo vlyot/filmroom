@@ -6,7 +6,7 @@ import { FallbackSource } from "@/lib/source/fallback"
 
 const HEALTH = {
   status: "ok",
-  contract_version: "0.5.0",
+  contract_version: "0.6.0",
   source: "engine",
   llm: true,
 } as const
@@ -93,6 +93,28 @@ describe("fallback source", () => {
     const source = new FallbackSource(null, new BundleSource("/bundle/"), null)
     await expect(source.possession("nope")).rejects.toThrow("not found")
     expect(await source.positions("nope")).toBeNull()
+  })
+
+  it("reports the API's metrics live, nothing offline, and falls back when they fail", async () => {
+    let up = true
+    const fetch = vi.fn(async (url: string) => {
+      if (!up) throw new TypeError("fetch failed")
+      return json(url.endsWith("/metrics") ? { uptime_s: 5 } : HEALTH)
+    })
+    vi.stubGlobal("fetch", fetch)
+    const api = new ApiSource("http://api")
+    const source = new FallbackSource(
+      api,
+      new BundleSource("/bundle/"),
+      await api.health()
+    )
+    expect(await source.metrics()).toEqual({ uptime_s: 5 })
+    up = false
+    expect(await source.metrics()).toBeNull()
+    expect(source.getState()).toMatchObject({ mode: "offline", lost: true })
+    const calls = fetch.mock.calls.length
+    expect(await source.metrics()).toBeNull()
+    expect(fetch.mock.calls.length).toBe(calls)
   })
 
   it("goes back live only when the API answers", async () => {

@@ -16,6 +16,7 @@ from collections.abc import Awaitable, Callable, Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
 from datetime import UTC, datetime
+from typing import Protocol
 
 import httpx
 from agent_framework import ChatContext, ChatMiddleware, SupportsChatGetResponse
@@ -28,6 +29,17 @@ PURPOSE: ContextVar[str] = ContextVar("llm_purpose", default="other")
 REQUESTS_PER_SECOND = 1.5  # Mistral Small 4 allows 1.67
 REQUEST_TIMEOUT_S = 20  # one model call; the Mistral SDK would otherwise wait up to five minutes
 TOOL_LOOP_LIMITS = {"max_iterations": 6, "max_function_calls": 8, "max_duration_seconds": 40.0}
+PRICE_IN, PRICE_OUT = 0.15, 0.60  # Mistral Small 4, $ per million tokens in / out
+MONTHLY_ALLOWANCE_USD = 10.0  # Mistral's included usage; the overage cap is $0
+
+
+def estimated_cost(tokens_in: int, tokens_out: int) -> float:
+    return (tokens_in * PRICE_IN + tokens_out * PRICE_OUT) / 1_000_000
+
+
+class Ledger(Protocol):
+    def add(self, day: str, purpose: str, tokens_in: int, tokens_out: int) -> None: ...
+    def day_total(self, day: str) -> int: ...
 
 
 class BudgetExhausted(Exception):
@@ -49,19 +61,24 @@ def _today() -> str:
 
 
 class LlmBudget(ChatMiddleware):
+    """With a ledger (the database's), the day's count starts from what was recorded before a restart, and
+    every call is recorded."""
+
     def __init__(
         self,
         daily_tokens: int,
         per_second: float = REQUESTS_PER_SECOND,
         clock: Callable[[], float] = time.monotonic,
         today: Callable[[], str] = _today,
+        ledger: Ledger | None = None,
     ):
         self.daily_tokens = daily_tokens
         self.interval = 1 / per_second
+        self.ledger = ledger
         self._clock = clock
         self._today = today
         self._day = today()
-        self._used = 0
+        self._used = ledger.day_total(self._day) if ledger else 0
         self._next_slot = 0.0
 
     @property
@@ -97,6 +114,11 @@ class LlmBudget(ChatMiddleware):
             tokens_in = usage.get("input_token_count") or 0
             tokens_out = usage.get("output_token_count") or 0
             self._used = self.used + tokens_in + tokens_out
+            if self.ledger:
+                try:
+                    self.ledger.add(self._day, PURPOSE.get(), tokens_in, tokens_out)
+                except Exception as error:  # the database is down: the call itself still counts in memory
+                    log.warning(json.dumps({"event": "ledger_error", "error": repr(error)[:300]}))
             log.info(
                 json.dumps(
                     {

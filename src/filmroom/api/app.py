@@ -1,5 +1,6 @@
 import logging
-from collections.abc import Callable
+from collections.abc import AsyncIterator, Callable
+from contextlib import asynccontextmanager
 from typing import Annotated, Literal
 
 from fastapi import FastAPI, HTTPException, Query, WebSocket
@@ -10,9 +11,8 @@ from filmroom.agents.facts import supported_languages
 from filmroom.agents.layer import AgentLayer, narration_for
 from filmroom.agents.overlay import overlay_events
 from filmroom.agents.session_pack import PackRequest
-from filmroom.api.engine_store import EngineStore
 from filmroom.api.replay import NARRATIVE_WAIT_S, ReplayChannel, ReplaySession
-from filmroom.api.store import FixtureStore, Store
+from filmroom.api.store import Store, open_store
 from filmroom.config import Settings
 from filmroom.contracts.models import (
     CONTRACT_VERSION,
@@ -22,6 +22,7 @@ from filmroom.contracts.models import (
     Health,
     Match,
     MatchSummary,
+    MetricsReport,
     Narrative,
     OverlayEvent,
     PositionsChunk,
@@ -34,6 +35,7 @@ from filmroom.contracts.models import (
     Verdict,
 )
 from filmroom.contracts.ws import ErrorMessage
+from filmroom.monitoring import Metrics, timing
 from filmroom.style import load_lens, presets, presets_by_id, public_lens, style_from_sliders, verdict
 
 SliderQuery = Annotated[float | None, Query(ge=0, le=1)]
@@ -53,9 +55,20 @@ def _supported(language: str) -> str:
     return language
 
 
-def create_app(store: Store, cors_origins: list[str], agents: AgentLayer | None = None) -> FastAPI:
+def create_app(
+    store: Store, cors_origins: list[str], agents: AgentLayer | None = None, metrics: Metrics | None = None
+) -> FastAPI:
     agents = agents or AgentLayer.offline(store)
-    app = FastAPI(title="FilmRoom API", version=CONTRACT_VERSION, lifespan=agents.lifespan)
+    metrics = metrics or Metrics()
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        with metrics.listening():
+            async with agents.lifespan(app):
+                yield
+
+    app = FastAPI(title="FilmRoom API", version=CONTRACT_VERSION, lifespan=lifespan)
+    app.middleware("http")(timing(metrics))
     app.add_middleware(
         CORSMiddleware, allow_origins=cors_origins, allow_methods=["GET", "POST"], allow_headers=["*"]
     )
@@ -63,6 +76,12 @@ def create_app(store: Store, cors_origins: list[str], agents: AgentLayer | None 
     @app.get("/health")
     def health() -> Health:
         return Health(status="ok", contract_version=CONTRACT_VERSION, source=store.source, llm=agents.live)
+
+    @app.get("/metrics")
+    def metrics_report() -> MetricsReport:
+        """Counters since start-up: requests, LLM calls, tokens against the daily cap and the monthly
+        allowance, how often narratives and analyst replies fell back, and replay sockets."""
+        return metrics.report(store.source, agents.narratives.budget)
 
     @app.get("/matches")
     def matches() -> list[MatchSummary]:
@@ -221,7 +240,10 @@ def create_app(store: Store, cors_origins: list[str], agents: AgentLayer | None 
                 channel.push_when_ready(agents.narratives.ready(request, NARRATIVE_WAIT_S))
             return narrative
 
-        await channel.run(ReplaySession(possessions, match.duration_ms, positions, narrate, speed, from_ms))
+        with metrics.replay():
+            await channel.run(
+                ReplaySession(possessions, match.duration_ms, positions, narrate, speed, from_ms)
+            )
 
     app.router.routes.extend(agents.mcp_routes())
     return app
@@ -239,8 +261,6 @@ def _log_to_stdout() -> None:
 
 
 settings = Settings()
-store = (
-    EngineStore.from_settings(settings) if settings.store == "engine" else FixtureStore(settings.fixtures_dir)
-)
+store = open_store(settings)
 _log_to_stdout()
 app = create_app(store, settings.cors_origins, AgentLayer.from_settings(settings, store))

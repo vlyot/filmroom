@@ -6,6 +6,7 @@ describe("router", () => {
   it("parses every page and round-trips through href", () => {
     const routes: Route[] = [
       { page: "home" },
+      { page: "status" },
       { page: "replay", matchId: "2019_09_09_001" },
       {
         page: "possession",

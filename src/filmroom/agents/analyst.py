@@ -117,6 +117,7 @@ class Analyst:
     async def _answer(self, request: AnalystRequest, messages: list[Message]) -> AnalystReply:
         cited: list[str] = []
         rejections: list[Rejection] = []
+        retried = False
         options = {"response_format": AnalystDraft, "temperature": 0.3, "max_tokens": 700}
         instructions = prompt("analyst.md")
         async with self.tools() as tools:
@@ -131,11 +132,13 @@ class Analyst:
                 else:
                     cited, rejections = self._check(request, draft)
                     if not rejections:
+                        log.info(json.dumps({"event": "analyst", "status": "verified", "retried": retried}))
                         return AnalystReply(
                             text=draft.text, possession_ids=cited, status="verified", model=self.model
                         )
                 retry = Message(role="user", contents=[feedback(rejections, "answer")])
                 messages = [*messages, *response.messages, retry]
+                retried = True
         log.info(json.dumps({"event": "analyst_fallback", "rejections": [r.code for r in rejections]}))
         fallback = load_language(request.language)["fallback"]
         text = fallback["analyst"] if cited else fallback["analyst_none"]

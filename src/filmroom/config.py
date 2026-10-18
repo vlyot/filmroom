@@ -13,7 +13,8 @@ class Settings(BaseSettings):
     holdout_path: Path | None = None
     cache_dir: Path = Path(".cache")
     fixtures_dir: Path = Path("fixtures")
-    store: Literal["fixtures", "engine"] = "fixtures"
+    store: Literal["fixtures", "engine", "database"] = "fixtures"
+    database_url: SecretStr | None = None
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
 
     mistral_api_key: SecretStr | None = None

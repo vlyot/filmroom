@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { HomePage } from "@/pages/home"
 import { MatchLayout } from "@/pages/match-layout"
+import { StatusPage } from "@/pages/status"
 
 export function App() {
   const [source, setSource] = useState<FallbackSource | null>(null)
@@ -92,7 +93,13 @@ function Shell() {
         </div>
       </header>
       <main className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6">
-        {route.page === "home" ? <HomePage /> : <MatchLayout route={route} />}
+        {route.page === "home" ? (
+          <HomePage />
+        ) : route.page === "status" ? (
+          <StatusPage />
+        ) : (
+          <MatchLayout route={route} />
+        )}
       </main>
     </div>
   )

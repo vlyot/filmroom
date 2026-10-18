@@ -112,6 +112,24 @@ def real_settings() -> Settings:
     return Settings()
 
 
+@pytest.fixture
+def pg_pool():
+    """A pool on TEST_DATABASE_URL with an empty schema, for tests marked `pg`."""
+    import psycopg
+    from psycopg_pool import ConnectionPool
+
+    from filmroom.db.schema import ensure_schema
+
+    url = os.environ["TEST_DATABASE_URL"]
+    with psycopg.connect(url, autocommit=True) as conn:
+        conn.execute("drop schema if exists public cascade")
+        conn.execute("create schema public")
+        ensure_schema(conn)
+    pool = ConnectionPool(url, min_size=1, max_size=2, open=True)
+    yield pool
+    pool.close()
+
+
 def pytest_collection_modifyitems(config, items):
     data_dir = Settings().data_dir
     skips = {}
@@ -119,6 +137,8 @@ def pytest_collection_modifyitems(config, items):
         skips["data"] = pytest.mark.skip(reason="DATA_DIR not available")
     if os.environ.get("RUN_LLM_TESTS") != "1" or Settings().mistral_api_key is None:
         skips["llm"] = pytest.mark.skip(reason="spends Mistral allowance; set RUN_LLM_TESTS=1 to run")
+    if not os.environ.get("TEST_DATABASE_URL"):
+        skips["pg"] = pytest.mark.skip(reason="TEST_DATABASE_URL not set")
     for item in items:
         for marker, skip in skips.items():
             if marker in item.keywords:

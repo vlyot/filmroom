@@ -1,12 +1,14 @@
-import { ChevronDownIcon } from "lucide-react"
+import { ActivityIcon, ChevronDownIcon } from "lucide-react"
 import { toast } from "sonner"
 
+import { href } from "@/lib/router"
 import { cn } from "@/lib/utils"
 import { useSource, useSourceState } from "@/state/source"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
@@ -65,6 +67,13 @@ export function ModeBadge() {
           Offline, the replay and every verdict still run in your browser;
           narratives are the pre-generated ones, and the analyst is unavailable.
         </p>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <a href={href({ page: "status" })}>
+            <ActivityIcon />
+            Service status
+          </a>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )

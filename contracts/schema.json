@@ -1,5 +1,5 @@
 {
-  "x-contract-version": "0.5.0",
+  "x-contract-version": "0.6.0",
   "$defs": {
     "AnalystReply": {
       "additionalProperties": false,
@@ -421,6 +421,112 @@
       "title": "Health",
       "type": "object"
     },
+    "Latency": {
+      "additionalProperties": false,
+      "description": "Over the most recent samples (up to 500); null before the first.",
+      "properties": {
+        "p50_ms": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "p95_ms": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "p50_ms",
+        "p95_ms"
+      ],
+      "title": "Latency",
+      "type": "object"
+    },
+    "LlmMetrics": {
+      "additionalProperties": false,
+      "description": "Every model call, each step of a tool-calling loop included. The month's figures come from the token\nledger (null without a database); the cost is an estimate at Mistral Small 4 prices, against the monthly\nincluded allowance.",
+      "properties": {
+        "calls": {
+          "type": "integer"
+        },
+        "errors": {
+          "type": "integer"
+        },
+        "latency": {
+          "$ref": "#/$defs/Latency"
+        },
+        "tokens_today": {
+          "type": "integer"
+        },
+        "daily_token_limit": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "month_calls": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "month_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "month_cost_usd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "allowance_usd": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "calls",
+        "errors",
+        "latency",
+        "tokens_today",
+        "daily_token_limit",
+        "month_calls",
+        "month_tokens",
+        "month_cost_usd",
+        "allowance_usd"
+      ],
+      "title": "LlmMetrics",
+      "type": "object"
+    },
     "Match": {
       "additionalProperties": false,
       "properties": {
@@ -514,6 +620,57 @@
         "teams"
       ],
       "title": "MatchSummary",
+      "type": "object"
+    },
+    "MetricsReport": {
+      "additionalProperties": false,
+      "description": "The API's own counters since start-up, for monitoring alongside Railway's CPU and memory graphs.",
+      "properties": {
+        "contract_version": {
+          "type": "string"
+        },
+        "source": {
+          "enum": [
+            "fixtures",
+            "engine",
+            "database"
+          ],
+          "type": "string"
+        },
+        "uptime_s": {
+          "type": "integer"
+        },
+        "requests": {
+          "$ref": "#/$defs/RequestMetrics"
+        },
+        "llm": {
+          "$ref": "#/$defs/LlmMetrics"
+        },
+        "narratives": {
+          "$ref": "#/$defs/OutcomeMetrics"
+        },
+        "analyst": {
+          "$ref": "#/$defs/OutcomeMetrics"
+        },
+        "replays_active": {
+          "type": "integer"
+        },
+        "replays_total": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "contract_version",
+        "source",
+        "uptime_s",
+        "requests",
+        "llm",
+        "narratives",
+        "analyst",
+        "replays_active",
+        "replays_total"
+      ],
+      "title": "MetricsReport",
       "type": "object"
     },
     "Narrative": {
@@ -690,6 +847,50 @@
         "factors"
       ],
       "title": "Option",
+      "type": "object"
+    },
+    "OutcomeMetrics": {
+      "additionalProperties": false,
+      "description": "LLM-written outputs since start-up. `fallback`: a template or canned line was served instead, after\nthe verifier rejected the draft twice or the LLM call failed. `rejected`: outputs where the verifier\nrejected at least one draft, retried or not. Rates are null before the first output.",
+      "properties": {
+        "verified": {
+          "type": "integer"
+        },
+        "fallback": {
+          "type": "integer"
+        },
+        "rejected": {
+          "type": "integer"
+        },
+        "fallback_rate": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rejection_rate": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "verified",
+        "fallback",
+        "rejected",
+        "fallback_rate",
+        "rejection_rate"
+      ],
+      "title": "OutcomeMetrics",
       "type": "object"
     },
     "OverlayEvent": {
@@ -1117,6 +1318,27 @@
         "provenance"
       ],
       "title": "PossessionSummary",
+      "type": "object"
+    },
+    "RequestMetrics": {
+      "additionalProperties": false,
+      "properties": {
+        "count": {
+          "type": "integer"
+        },
+        "errors": {
+          "type": "integer"
+        },
+        "latency": {
+          "$ref": "#/$defs/Latency"
+        }
+      },
+      "required": [
+        "count",
+        "errors",
+        "latency"
+      ],
+      "title": "RequestMetrics",
       "type": "object"
     },
     "RuleSet": {

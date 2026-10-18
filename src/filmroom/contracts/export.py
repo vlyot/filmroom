@@ -18,6 +18,7 @@ from filmroom.contracts.models import (
     Health,
     Match,
     MatchSummary,
+    MetricsReport,
     Narrative,
     OverlayEvent,
     PositionsChunk,
@@ -44,6 +45,7 @@ MODELS = [
     SessionPack,
     OverlayEvent,
     BundleManifest,
+    MetricsReport,
     ServerMessage,
     ClientMessage,
 ]
