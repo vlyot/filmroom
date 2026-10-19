@@ -7,6 +7,7 @@ SCHEMA_VERSION covers the derived tables: a store refuses a database seeded unde
 lasting tables are created if missing and never altered here.
 """
 
+import atexit
 from functools import cache
 
 from psycopg import Connection
@@ -72,8 +73,9 @@ def read_meta(conn: Connection) -> dict[str, str]:
 @cache
 def open_pool(url: str) -> ConnectionPool:
     """One pool per database for the whole process, shared by the store, the cache and the ledger, with the
-    schema in place."""
+    schema in place. Closed at exit, so its worker threads stop before the interpreter does."""
     pool = ConnectionPool(url, min_size=1, max_size=4, open=True)
+    atexit.register(pool.close)
     with pool.connection() as conn:
         ensure_schema(conn)
     return pool

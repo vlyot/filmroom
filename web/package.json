@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc -b",
     "preview": "vite preview",
     "gen:contracts": "json2ts -i ../contracts/schema.json -o src/contracts.ts --unreachableDefinitions --no-additionalProperties && prettier --write src/contracts.ts",
     "test": "vitest run"
