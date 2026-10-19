@@ -54,7 +54,7 @@ jobs:
       - run: npm run build
         env:
           VITE_API_URL: ${{ vars.API_URL }}
-          VITE_BASE: /prem-league/
+          VITE_BASE: /filmroom/
       - uses: actions/upload-pages-artifact@v3
         with:
           path: web/dist

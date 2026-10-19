@@ -1,8 +1,8 @@
 # FilmRoom
 
-[![CI](https://github.com/vlyot/prem-league/actions/workflows/ci.yml/badge.svg)](https://github.com/vlyot/prem-league/actions/workflows/ci.yml)
+[![CI](https://github.com/vlyot/filmroom/actions/workflows/ci.yml/badge.svg)](https://github.com/vlyot/filmroom/actions/workflows/ci.yml)
 
-**Live:** https://vlyot.github.io/prem-league/ (GitHub Pages, backed by an API on Railway; it falls back to a static bundle if the API is down)
+**Live:** https://vlyot.github.io/filmroom/ (GitHub Pages, backed by an API on Railway; it falls back to a static bundle if the API is down)
 
 AI film-room analyst for the Microsoft × Premier League "Inside the Game" hackathon. It finds the possessions where a clearly better option was available, judges the alternatives against a chosen tactical style, and explains them for coaches, players and fans.
 
@@ -99,7 +99,7 @@ npm install
 npm run gen:contracts   # regenerate src/contracts.ts from contracts/schema.json
 npm test                # unit and parity tests (Vitest)
 npm run dev             # the static bundle in public/bundle; copy .env.example to .env.local to use the API
-VITE_BASE=/prem-league/ npm run build   # for GitHub Pages (hash routes, so deep links work there)
+VITE_BASE=/filmroom/ npm run build   # for GitHub Pages (hash routes, so deep links work there)
 ```
 
 Anything derived from the SoccER data (`fixtures/possessions`, `fixtures/matches`, `web/public/bundle`, `.cache`) is generated locally and gitignored; the dataset has no licence for redistribution.
