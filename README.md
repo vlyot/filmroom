@@ -2,104 +2,98 @@
 
 [![CI](https://github.com/vlyot/filmroom/actions/workflows/ci.yml/badge.svg)](https://github.com/vlyot/filmroom/actions/workflows/ci.yml)
 
-**Live:** https://vlyot.github.io/filmroom/ (GitHub Pages, backed by an API on Railway; it falls back to a static bundle if the API is down)
+**An AI film-room analyst that finds the moments where a clearly better option was on, judges them against the coach's own tactical style, and explains them to coaches, players and fans, with every number checked.**
 
-AI film-room analyst for the Microsoft × Premier League "Inside the Game" hackathon. It finds the possessions where a clearly better option was available, judges the alternatives against a chosen tactical style, and explains them for coaches, players and fans.
+**Live app:** https://vlyot.github.io/filmroom/ · **Demo video:** _link added at submission_
 
-The engine computes; the LLM explains. Every number shown comes from the deterministic engine.
+Built for the Microsoft × Premier League "Inside the Game" hackathon, on synthetic match data.
 
-## Setup
+![A flagged moment: pitch replay with the option lanes, the danger curve, the options ranked under the chosen style, and a verified explanation](docs/images/breakdown.png)
 
-Requirements: [uv](https://docs.astral.sh/uv/) (it installs Python 3.13) and Node 20+.
+## The problem
 
-```bash
-uv sync                      # Python deps
-cp .env.example .env         # then fill in the paths and key
+After a match, an analyst spends hours cutting video to find the few possessions worth showing the squad. The moments that matter aren't always the goals and the chances. They are the ones where the move broke down while a better pass was on. What counts as "better" depends on the coach: a possession side and a counter-attacking side would judge the same moment differently. And whatever an AI says about it has to be right, because a coach who catches one invented number stops trusting the rest.
+
+## What it does
+
+- **Flags moments live.** Replay a match on its clock (1× to 10×). Each possession is analysed as it ends, and the ones where a clearly better option was available are flagged at once.
+- **Shows what was on.** For each flagged moment: a pitch replay with the option lanes, the danger curve, and every alternative with its success band and threat, ranked under the coach's style.
+- **Changes with the coach's style, and says why.** Six presets (Possession, Direct or Counter with the ball; High Press, Mid-Block or Low Block without it) or four custom sliders. When the verdict changes, the app names the principle and the factor that flipped it.
+- **Explains it for coach, player or fan, in English or Spanish.** Short narratives from Mistral, where code fills every number and name and a verifier rejects anything the model wrote that the engine didn't.
+- **Builds the session.** A session pack ranks the team's moments for half-time or full-time, groups them into themes and counts how other styles would judge them.
+- **Answers questions.** Ask the analyst, e.g. "Show me possessions we lost in midfield after a switch of play". It calls the engine through MCP and cites the possessions it means.
+- **Feeds broadcast.** An overlay JSON feed gives one event per flagged moment with captions in every language.
+- **Stays up.** If the API stops answering, the app switches to a static bundle, keeps replaying and judging in the browser, says so in the header, and switches back when the API returns.
+
+## How it works
+
+```mermaid
+flowchart LR
+  soccer[(SoccER matches)] --> engine["Engine<br/>pass / dribble / xG / xT models"]
+  engine -- seed --> pg[("Postgres + pgvector")]
+  engine -- export --> bundle[("Static bundle")]
+  pg --> api["FastAPI on Railway<br/>REST · WebSocket replay"]
+  api --> agents["Microsoft Agent Framework<br/>narrator · analyst · session pack"]
+  agents -- "MCP tools" --> api
+  agents --> verifier["Code verifier"]
+  agents <--> mistral["Mistral Small 4"]
+  api --> web["React app on GitHub Pages"]
+  bundle -. fallback .-> web
 ```
 
-### Data
+- **Engine:** deterministic Python. It splits each match into possessions as events arrive and values every alternative at each decision. Each match is analysed with models fitted on the other matches.
+- **Tactical lens:** a style is four sliders, factor weights are a linear function of them, and each factor is moved by at most one slider. So every verdict change traces to one factor and the slider behind it.
+- **Agents:** Microsoft Agent Framework over six read-only engine tools served by MCP.
+  - The narrator writes around `{slot}` placeholders.
+  - The analyst writes no numbers.
+  - The session pack is a five-step workflow.
+- **Delivery:** GitHub Actions tests every push and deploys the API to Railway, then GitHub Pages serves the app. Postgres holds the engine output, the narrative cache and the token ledger, and pgvector finds similar situations.
 
-FilmRoom runs on the SoccER dataset (synthetic matches from the open-source Gameplay Football engine). The dataset is **not** in this repo. Download it from the authors and point `DATA_DIR` at the folder holding the `Match_*` directories.
+More in [architecture](docs/architecture.md).
 
-> L. Morra, F. Manigrasso, G. Canto, C. Gianfrate, E. Guarino, F. Lamberti. "Slicing and Dicing Soccer: Automatic Detection of Complex Events from Spatio-Temporal Data." ICIAR 2020. Code: https://gitlab.com/grains2/slicing-and-dicing-soccer
+## Results
 
-Player and team names in the game parody real people, so FilmRoom replaces every name with a fictional one at load time.
+Measured at the frozen commit `bfa7a57`; method and limits in [evaluation](docs/evaluation.md).
 
-Expected threat (xT) uses Karun Singh's published 12 × 8 grid: K. Singh, "Introducing Expected Threat (xT)", 2019, https://karun.in/blog/expected-threat.html.
+| Check | Result |
+| --- | --- |
+| Pass model calibration, out of fold | 5,446 real passes: ECE 0.021, Brier 0.154 (0.175 for the base rate) |
+| What was on instead: labelled better player in the engine's top 3 | 12 of 22 (55%, 95% CI 35–73%); random 30% |
+| Verifier | 2,268 of 2,268 injected errors caught, English and Spanish |
+| Style lens | 2,585 of 2,585 verdict flips traced to one named factor; 0 slider-direction violations |
+| Live latency | Template at the moment the possession ends; verified narrative in about 2 s |
+| Reliability | API stopped in a drill: the site kept working from the bundle and returned to live afterwards |
 
-## Engine
+The pass model is checked against thousands of real outcomes. The "what was on instead" labels are 22 AI-drafted, human-reviewed possessions written by the same author as the engine, so that score is agreement with our own reference set, not independent accuracy.
 
-`filmroom.engine` splits each match into possessions as events arrive, lists every decision (passes, shots, and the final dribble when a player loses the ball without releasing it), values each alternative with a pass model, a dribble model, an xG model and xT, and picks the turning point. Each possession is analysed only on data up to the frame it closed, and every match is analysed with models fitted on the other matches (leave one match out).
+## Judging criteria
 
-## Tactical lens
+| Criterion | Where to look |
+| --- | --- |
+| Technological implementation | Synthetic data pipeline over SoccER ([data](docs/data.md)); calibrated models; leave-one-match-out evaluation; no-lookahead, contract and browser-parity tests in CI |
+| Agentic design and innovation | Agent Framework narrator, analyst and session-pack workflow; engine tools over MCP; a code verifier that keeps every number honest |
+| Real-world impact | The film-session workflow: flag, explain, rank, share. Deployed with a static fallback, monitoring, a token budget and template fallbacks |
+| User experience and presentation | Live replay, the style switch that names its reason, coach / player / fan views in two languages, the demo video |
+| Hackathon category | Synthetic football events turned into explainable match intelligence, live and in several languages |
 
-`filmroom.style` judges every option under a coach's style. A style is four sliders (risk tolerance, verticality, press trigger, defensive line height); the factor weights are a linear function of them (`src/filmroom/styles.json`), and each factor is moved by at most one slider, so whenever two styles disagree the verdict change traces to one factor and the slider behind it. Six presets pair a with-the-ball rule set (Possession, Direct, Counter) with a without-the-ball one (High Press, Mid-Block, Low Block); every rule set states its principles with a source. The without-the-ball sliders weigh what losing the ball would cost: counter-press cover around where it would be lost, and how much of the space behind that spot the team still controls.
+## Built with
 
-## Agent layer
+- **Microsoft Agent Framework:** narrator, analyst and the session-pack workflow
+- **Model Context Protocol:** the engine's tools at `/mcp`, open to any MCP client
+- **GitHub Actions:** tests, evaluation checks, image build and deploy on every push
+- **GitHub Pages:** the app
+- Also: Railway (API, Postgres with pgvector), Mistral Small 4, FastAPI, React with shadcn/ui
 
-`filmroom.agents` explains the engine's verdicts with Microsoft Agent Framework and Mistral (`mistral-small-2603`), calling the engine through MCP.
+## Data
 
-- **Narrator:** one call per flagged moment, audience (coach, player, fan), language (English, Spanish) and style. It writes text with `{slot}` placeholders and claims; code fills the slots from the engine, so the model never writes a number or a name.
-- **Verifier:** plain code. It rejects digits, spelled-out numbers and names outside slots, unknown slots, and claims that contradict the verdict under the active style; a rejected draft is retried once, then the template is shown. A template is always shown first, and the verified narrative replaces it.
-- **MCP server** at `/mcp`: six read-only engine tools (flagged moments, a possession, its turning point, options under a style, comparing styles, similar situations). Any MCP client can use them.
-- **Analyst** (`POST /analyst`): a tool-calling agent over those tools. It writes no numbers; it cites the possessions it talks about, and the app shows their numbers from the engine.
-- **Session pack** (`/matches/{id}/session-pack`): an Agent Framework workflow that ranks the team's flagged moments, counts how other presets would judge them, groups them into themes and narrates each.
+FilmRoom runs on SoccER (L. Morra et al., ICIAR 2020), synthetic matches from the open-source Gameplay Football engine. Every player and team name is replaced with a fictional one, and no game footage is used. The dataset isn't in this repository. See [data](docs/data.md) for the citation and what is published.
 
-Without `MISTRAL_API_KEY` everything still works on templates, and the analyst says it is offline. Every model call is logged with its tokens and counted against a daily cap (`LLM_DAILY_TOKEN_LIMIT`).
+## Docs
 
-What the verifier can't promise: it checks numbers, names, slots and claims, not every shade of meaning. A sentence can still use a slot loosely ("a pass" where the best option was a dribble), and a real name that ends like an ordinary word ("-ando", "-ing") could open a sentence.
+- [Architecture](docs/architecture.md)
+- [Evaluation](docs/evaluation.md)
+- [Data](docs/data.md)
+- [Decisions](docs/decisions.md)
+- [Development](docs/development.md): setup, commands, deploy
 
-## Web app
-
-`web/` (React 19, Vite, shadcn/ui) is the product: a match replay that flags possessions as they end, a breakdown of each flagged moment (pitch replay with option lanes, danger curve, options ranked under the style, factor by factor), style controls (six presets or four custom sliders), coach / player / fan in English or Spanish, the session pack, ask-the-analyst and the overlay feed.
-
-- **Two data sources, one app.** With `VITE_API_URL` set and the API answering, the app is live: REST for data and a WebSocket replay (`/matches/{id}/replay`) that plays the stored analyses on a match clock (1×–10×), streams positions at 10 Hz, sends each flag as the clock passes the possession's end and pushes the verified narrative once it is written. Otherwise, or as soon as the API stops answering, it reads the static bundle and plays the same replay in the browser. The badge in the header says which, and switches by hand for a fallback drill.
-- **Verdicts are computed in the browser.** `web/src/lib/lens.ts` and `web/src/lib/narrative.ts` port the style scoring and the slot filling; `contracts/parity.json` (written by `tests/web_parity.py` from the synthetic match) pins them to the Python, and both test suites check it. Slider drags never wait on the network, and offline mode judges custom styles too.
-- **Overlay feed** (`/matches/{id}/overlay?style=`): one event per flagged moment with a fan caption in every language, filled from the same engine slots. It serves cached verified captions or templates and never starts LLM work.
-
-## Deployment
-
-- **GitHub Pages** serves the web app (the submitted URL), built by `.github/workflows/pages.yml` after CI passes on `main`. CI has no SoccER data, so the static bundle is exported locally and kept on the `bundle` GitHub release (`scripts/publish_bundle.py`); the workflow refuses a bundle exported under another contract version, so offline mode can't drift from the API.
-- **Railway** runs the API from the `Dockerfile` (one replica, always on), deployed by CI's `deploy-api` job with `railway up` once every check has passed. A deployment that fails its `/health` check leaves the previous one serving.
-- **Postgres with pgvector** on Railway, over private networking. Railway holds no SoccER data: `scripts/seed_db.py` copies engine output (matches, possessions, positions and situation vectors) from a machine that has the dataset, in one transaction. The API (`STORE=database`) reads only that, so it needs neither the dataset nor the engine's models and stays near 125 MB. "Similar situations" is a pgvector cosine search. The narrative cache and the LLM token ledger live there too and survive reseeds and redeploys, so the daily token cap holds across restarts.
-- **Monitoring:** every LLM call, narrative and analyst reply is a JSON log line (Railway keeps them), and `/metrics` counts the same events: requests and server errors, LLM latency, tokens today against the cap and this month against Mistral's $10 allowance, narrative and analyst fallback rates, verifier rejections and live replays. The app's **Service status** page (from the mode badge) shows them; CPU and memory are on Railway's dashboard.
-
-## Common commands
-
-```bash
-uv run pytest                                  # tests (real-data tests skip without DATA_DIR)
-uv run python -m filmroom.contracts.export     # regenerate contracts/schema.json + openapi.json
-uv run python scripts/build_fixtures.py        # local fixtures from the real data (gitignored)
-uv run python scripts/export_bundle.py --public  # static bundle without position data
-uv run python scripts/export_bundle.py --store engine --matches 2019_09_09_001,2019_09_14_001  # bundle from engine output
-uv run python -m tests.web_parity              # regenerate contracts/parity.json after a lens or slot change
-uv run python scripts/analyse_matches.py       # analyse every match into the engine cache (gitignored)
-uv run filmroom-eval                           # what was on instead: engine alternatives vs the labels
-uv run filmroom-eval --thresholds              # refit the flag threshold over all matches (no labels); writes engine/params.json
-uv run filmroom-eval --calibration             # pass-model and xG calibration out of fold; plot in .cache/eval
-uv run filmroom-eval --lens                    # preset disagreement, flip attribution, slider directions, flag rates
-uv run uvicorn filmroom.api.app:app --reload   # API on :8000 (fixtures; STORE=engine for live analysis); MCP at /mcp
-uv run python scripts/prewarm_narratives.py --match 2019_09_09_001 --top 5   # narrative cache: dry run, add --yes to spend
-RUN_LLM_TESTS=1 uv run pytest tests/test_llm_live.py   # a few live Mistral calls (skipped otherwise)
-
-# Database store tests: a throwaway pgvector Postgres (they reset its public schema)
-docker run -d --name filmroom-pg -e POSTGRES_PASSWORD=postgres -p 55432:5432 pgvector/pgvector:pg17
-TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:55432/postgres uv run pytest
-
-# Seed Railway's Postgres (dry run; add --yes to write) and publish the Pages bundle (dry run; add --yes)
-railway run --service Postgres -- uv run python scripts/seed_db.py --url-env DATABASE_PUBLIC_URL --matches 2019_09_09_001,2019_09_10_001,2019_09_14_001
-uv run python scripts/publish_bundle.py --matches 2019_09_09_001,2019_09_10_001,2019_09_14_001
-```
-
-Web app (`web/`, React + Vite + shadcn/ui):
-
-```bash
-cd web
-npm install
-npm run gen:contracts   # regenerate src/contracts.ts from contracts/schema.json
-npm test                # unit and parity tests (Vitest)
-npm run dev             # the static bundle in public/bundle; copy .env.example to .env.local to use the API
-VITE_BASE=/filmroom/ npm run build   # for GitHub Pages (hash routes, so deep links work there)
-```
-
-Anything derived from the SoccER data (`fixtures/possessions`, `fixtures/matches`, `web/public/bundle`, `.cache`) is generated locally and gitignored; the dataset has no licence for redistribution.
+Code under the [MIT licence](LICENSE); the SoccER data is not covered.

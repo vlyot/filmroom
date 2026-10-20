@@ -1,6 +1,10 @@
-# Planning docs (local only)
+# Planning and submission docs (local only)
 /prd.md
 /roadmap.md
+/submission.md
+
+# Demo video drafts
+/demo/
 
 # Secrets
 .env
