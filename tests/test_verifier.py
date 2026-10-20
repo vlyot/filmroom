@@ -175,6 +175,15 @@ def test_allows_articles_football_terms_and_style_names(text, language):
     assert check_text(text, language) == []
 
 
+@pytest.mark.parametrize(
+    ("text", "language"),
+    [("The turning point was decision one.", "en"), ("El momento clave fue la decisión uno.", "es")],
+)
+def test_rejects_a_decision_counted_in_words(text, language):
+    # "one" alone is allowed (a better one); counting decisions in words isn't, and was zero-based in a draft
+    assert {r.code for r in check_text(text, language)} == {"number_word"}
+
+
 def test_reply_check_rejects_unknown_possessions_and_allows_roster_names():
     _, possessions = synth()
     roster = name_words(["Kofi Mensah", "Aled Brook", "Harrow Vale"])
