@@ -5,11 +5,10 @@
  *
  * Usage (from web/): npm run record:demo   [DEMO_URL=... to record another deployment]
  */
-import { mkdir, rm } from "node:fs/promises"
+import { mkdir, readFile, rm } from "node:fs/promises"
 import { chromium, type Locator, type Page } from "playwright"
 
 const SITE = process.env.DEMO_URL ?? "https://vlyot.github.io/filmroom/"
-const REPO = "https://github.com/vlyot/filmroom#how-it-works"
 const MATCH = "2019_09_09_001"
 const FLAG_AT = "02:53"
 const QUESTION =
@@ -18,6 +17,27 @@ const OUT_DIR = "../demo"
 const OUT = `${OUT_DIR}/filmroom-demo.webm`
 const LIMIT_S = 115
 const SIZE = { width: 1920, height: 1080 }
+/** A dark page with the app's font, for the title cards. */
+const BLANK = `<html style="background:#0c0e14"><head><link rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700&display=block"></head></html>`
+
+/** The README's architecture diagram, drawn full-screen with mermaid, so the video shows the same diagram. */
+async function diagramPage(): Promise<string> {
+  const readme = await readFile("../README.md", "utf8")
+  const source = readme.match(/```mermaid\r?\n([\s\S]*?)```/)![1]
+  const escaped = source
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+  return `<html><head><link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700&display=block">
+    <style>body { margin: 0; height: 100vh; display: flex; align-items: center; justify-content: center;
+      background: #fff; } .mermaid { width: 1700px; margin-bottom: 120px; }</style></head>
+    <body><pre class="mermaid">${escaped}</pre><script type="module">
+      import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.esm.min.mjs"
+      mermaid.initialize({ startOnLoad: true, theme: "neutral", fontFamily: "Plus Jakarta Sans" })
+    </script></body></html>`
+}
 
 const pause = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
@@ -39,8 +59,8 @@ async function decorate(page: Page) {
       #demo-title p { font-size: 36px; margin: 0; opacity: .75; }
       #demo-cursor { position: fixed; z-index: 10001; width: 22px; height: 22px; margin: -11px 0 0 -11px;
         border-radius: 50%; background: rgba(255, 196, 0, .9); border: 3px solid #fff;
-        box-shadow: 0 2px 10px rgba(0,0,0,.4); pointer-events: none; left: 960px; top: 540px;
-        transition: left .5s ease-in-out, top .5s ease-in-out, transform .15s; }`
+        box-shadow: 0 2px 10px rgba(0,0,0,.4); pointer-events: none; left: 960px; top: 540px; opacity: 0;
+        transition: left .5s ease-in-out, top .5s ease-in-out, transform .15s, opacity .3s; }`
     document.head.append(style)
     for (const id of ["demo-caption", "demo-cursor"]) {
       const el = document.createElement("div")
@@ -58,7 +78,11 @@ async function caption(page: Page, text: string | null) {
   }, text)
 }
 
+/** A full-screen card on a dark page of its own, in the app's font. */
 async function titleCard(page: Page, title: string, line: string, ms: number) {
+  await page.setContent(BLANK)
+  await decorate(page)
+  await page.evaluate(() => document.fonts.load('700 96px "Plus Jakarta Sans"'))
   await page.evaluate(
     ([title, line]) => {
       const el = document.createElement("div")
@@ -88,6 +112,7 @@ async function click(page: Page, target: Locator) {
   await page.evaluate(
     ([x, y]) => {
       const el = document.getElementById("demo-cursor")!
+      el.style.opacity = "1"
       el.style.left = `${x}px`
       el.style.top = `${y}px`
     },
@@ -127,9 +152,7 @@ async function record() {
   const page = await context.newPage()
   const started = Date.now()
 
-  // 1. The problem (the title card is drawn on a blank page, so the video doesn't open on a white load)
-  await page.setContent("<html style='background:#0c0e14'></html>")
-  await decorate(page)
+  // 1. The problem (the title card comes first, so the video doesn't open on a white load)
   await titleCard(page, "FilmRoom", "What was on, and not taken", 3500)
   await page.goto(SITE)
   await page
@@ -141,7 +164,7 @@ async function record() {
     "Analysts spend hours finding the moments where a better option was on."
   )
   await choose(page, "Tactical style", "Possession + High Press")
-  await pause(2500)
+  await pause(1500)
 
   // 2. A live flag
   await caption(
@@ -171,12 +194,12 @@ async function record() {
     page,
     "The breakdown: what was on, each option's odds and threat, ranked under the coach's style."
   )
-  await pause(6000)
+  await pause(5000)
   await caption(
     page,
     "Mistral explains it. Code fills every number and name; a verifier rejects anything else."
   )
-  await pause(6000)
+  await pause(5000)
 
   // 4. The style switch
   await caption(
@@ -185,7 +208,7 @@ async function record() {
   )
   await choose(page, "Tactical style", "Counter + Low Block")
   await scrollTo(page, page.getByText("Verdict changed").first())
-  await pause(6000)
+  await pause(5000)
 
   // 5. Audiences and languages
   await caption(
@@ -193,9 +216,9 @@ async function record() {
     "The same moment for coach, player or fan, in English or Spanish."
   )
   await click(page, page.getByRole("radio", { name: "Fan" }))
-  await pause(2000)
+  await pause(1500)
   await choose(page, "Narrative language", "Spanish")
-  await pause(4500)
+  await pause(4000)
   await choose(page, "Narrative language", "English")
 
   // 6. The analyst agent
@@ -207,19 +230,26 @@ async function record() {
   await page.getByLabel("Question").fill(QUESTION)
   await pause(1200)
   await click(page, page.getByRole("button", { name: "Send" }))
-  await pause(12_000)
+  await page
+    .getByText("Querying the engine")
+    .waitFor({ state: "hidden", timeout: 40_000 })
+  await pause(5000)
 
   // 7. Architecture
-  await page.goto(REPO)
+  await page.setContent(await diagramPage())
+  await page.locator(".mermaid svg").waitFor({ timeout: 20_000 })
   await decorate(page)
   await caption(
     page,
     "The engine computes; the LLM explains. Agent Framework, MCP, GitHub Actions, Pages and Railway."
   )
-  await pause(1500)
-  await page.mouse.wheel(0, 200)
   await pause(7000)
-  await titleCard(page, "FilmRoom", "vlyot.github.io/filmroom", 3500)
+  await titleCard(
+    page,
+    "FilmRoom",
+    "vlyot.github.io/filmroom · github.com/vlyot/filmroom",
+    3500
+  )
 
   const seconds = (Date.now() - started) / 1000
   const video = page.video()!

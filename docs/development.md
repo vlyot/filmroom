@@ -61,6 +61,7 @@ npm test                # unit and parity tests (Vitest)
 npm run lint && npm run typecheck
 npm run dev             # the static bundle in public/bundle; copy .env.example to .env.local to use the API
 VITE_BASE=/filmroom/ npm run build   # for GitHub Pages (hash routes, so deep links work there)
+npm run record:demo     # record the demo video from the live site into ../demo (DEMO_URL= for another deployment)
 ```
 
 ## Deploy
