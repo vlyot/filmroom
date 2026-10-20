@@ -158,11 +158,10 @@ def calibration_text(r: CalibrationReport) -> str:
     return "\n".join(lines)
 
 
-def shot_calibration_text(reports: dict[str, CalibrationReport]) -> str:
-    return "\n".join(
-        f"shots, {name:<9} {r.n} real shots, observed {r.observed_rate:.0%}: Brier {r.brier:.4f} "
-        f"(always the observed rate: {r.base_rate_brier:.4f}), ECE {r.ece:.4f}"
-        for name, r in reports.items()
+def shot_calibration_text(r: CalibrationReport) -> str:
+    return (
+        f"xG: {r.n} real shots, {r.observed_rate:.0%} scored: Brier {r.brier:.4f} "
+        f"(always the scoring rate: {r.base_rate_brier:.4f}), ECE {r.ece:.4f}"
     )
 
 
