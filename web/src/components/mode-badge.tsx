@@ -51,7 +51,7 @@ export function ModeBadge() {
         <DropdownMenuRadioGroup
           value={mode}
           onValueChange={async (next) => {
-            if (next === "offline") source.goOffline()
+            if (next === "offline") source.goOffline("manual")
             else if (!(await source.goLive()))
               toast.error("The live API isn't answering")
           }}

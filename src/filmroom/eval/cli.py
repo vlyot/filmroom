@@ -13,8 +13,10 @@ Usage:
 
 import argparse
 import json
+import subprocess
 from dataclasses import asdict
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Protocol
 
 from filmroom.api.store import FixtureStore
@@ -49,6 +51,21 @@ from filmroom.eval.scoring import (
     score,
 )
 from filmroom.style import load_lens, presets
+
+
+def commit_info(cwd: Path | None = None) -> dict | None:
+    """The commit a result was measured on, so a report can cite the frozen detector; `dirty` means the tree
+    had uncommitted changes, so the result may not match that commit. None outside a git checkout."""
+
+    def git(*args: str) -> str:
+        return subprocess.run(
+            ["git", *args], cwd=cwd, capture_output=True, text=True, check=True
+        ).stdout.strip()
+
+    try:
+        return {"sha": git("rev-parse", "HEAD"), "dirty": bool(git("status", "--porcelain"))}
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return None
 
 
 class DecisionSource(Protocol):
@@ -195,6 +212,11 @@ def main() -> int:
     out = settings.cache_dir / "eval"
     out.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+    commit = commit_info()
+    if commit:
+        print(f"commit {commit['sha'][:7]}{' (uncommitted changes)' if commit['dirty'] else ''}\n")
+    else:
+        print("commit unknown (not a git checkout)\n")
 
     if args.calibration:
         rows = load_rows(catalog, settings.cache_dir)
@@ -204,7 +226,7 @@ def main() -> int:
         print(calibration_text(result))
         print(shot_calibration_text(shots))
         plot(result, out / f"calibration-{stamp}.png")
-        body = asdict(result) | {"xg": asdict(shots)}
+        body = {"commit": commit} | asdict(result) | {"xg": asdict(shots)}
         (out / f"calibration-{stamp}.json").write_text(json.dumps(body, indent=1))
         print(f"plot and JSON written to {out}")
         return 0
@@ -214,7 +236,8 @@ def main() -> int:
     if args.source == "fixtures":
         scores = evaluate(labels, FixtureDecisionSource(FixtureStore(settings.fixtures_dir)))
         print(f"{args.set} set: {len(labels)} labels\n{report(scores)}")
-        (out / f"{args.set}-{stamp}.json").write_text(json.dumps([asdict(s) for s in scores], indent=1))
+        body = {"commit": commit, "scores": [asdict(s) for s in scores]}
+        (out / f"{args.set}-{stamp}.json").write_text(json.dumps(body, indent=1))
         return 0
 
     rows = load_rows(catalog, settings.cache_dir)
@@ -237,6 +260,7 @@ def main() -> int:
         f"Turning point = final decision; how the labels compare (context, not a score):\n{report(context)}"
     )
     result = {
+        "commit": commit,
         "params": params.model_dump(),
         "alternatives": asdict(agreement) | {"passed": agreement.passed},
         "turning_point_context": [asdict(s) for s in context],

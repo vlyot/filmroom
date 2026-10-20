@@ -19,10 +19,17 @@ export type SourceState = {
   hasApi: boolean
   /** Offline because the API stopped answering, rather than by choice. */
   lost: boolean
+  /** Offline because someone chose it in the badge: the API isn't re-probed until they switch back. */
+  manual: boolean
+  /** Back live because a re-probe found the API answering again. */
+  restored: boolean
 }
 
+/** How often an offline app that didn't choose to be offline checks whether the API is back. */
+export const REPROBE_MS = 60_000
+
 /** The API while it answers, the static bundle otherwise. A request that fails to reach the API switches the
- * app to the bundle for good (until someone switches back) and is answered from the bundle. */
+ * app to the bundle and is answered from the bundle; `watch` brings it back once the API answers again. */
 export class FallbackSource implements DataSource {
   readonly bundle: BundleSource
   private api: ApiSource | null
@@ -41,6 +48,8 @@ export class FallbackSource implements DataSource {
       health,
       hasApi: api !== null,
       lost: false,
+      manual: false,
+      restored: false,
     }
   }
 
@@ -56,23 +65,51 @@ export class FallbackSource implements DataSource {
     return this.state.mode === "live" && this.api ? this.api : this.bundle
   }
 
-  goOffline(lost = false) {
+  goOffline(reason: "manual" | "lost") {
     if (this.state.mode === "offline") return
-    this.set({ mode: "offline", health: null, lost })
+    this.set({
+      mode: "offline",
+      health: null,
+      lost: reason === "lost",
+      manual: reason === "manual",
+      restored: false,
+    })
   }
 
   /** Back to the API if it answers; false when it doesn't. */
   async goLive(): Promise<boolean> {
     const health = (await this.api?.health()) ?? null
     if (!health) return false
-    this.set({ mode: "live", health, lost: false })
+    this.set({
+      mode: "live",
+      health,
+      lost: false,
+      manual: false,
+      restored: false,
+    })
     return true
+  }
+
+  /** While offline by accident (the API was down at load or stopped answering), probes the API every
+   * `intervalMs` in a visible tab and goes live once it answers. Returns a function that stops it. */
+  watch(intervalMs = REPROBE_MS): () => void {
+    const probe = async () => {
+      const { mode, manual } = this.state
+      if (!this.api || mode !== "offline" || manual) return
+      if (globalThis.document?.hidden) return
+      const health = await this.api.health()
+      // Someone may have switched by hand while the probe was in flight.
+      if (!health || this.state.mode !== "offline" || this.state.manual) return
+      this.set({ mode: "live", health, lost: false, restored: true })
+    }
+    const timer = setInterval(() => void probe(), intervalMs)
+    return () => clearInterval(timer)
   }
 
   /** After a live stream dropped: falls back if the API no longer answers. */
   async check(): Promise<void> {
     if (this.state.mode === "live" && !(await this.api!.health()))
-      this.goOffline(true)
+      this.goOffline("lost")
   }
 
   private async call<T>(
@@ -83,7 +120,7 @@ export class FallbackSource implements DataSource {
       return await request(source)
     } catch (error) {
       if (!(error instanceof Unavailable) || source === this.bundle) throw error
-      this.goOffline(true)
+      this.goOffline("lost")
       return request(this.bundle)
     }
   }
@@ -114,7 +151,7 @@ export class FallbackSource implements DataSource {
       return await this.api.metrics()
     } catch (error) {
       if (!(error instanceof Unavailable)) throw error
-      this.goOffline(true)
+      this.goOffline("lost")
       return null
     }
   }

@@ -21,6 +21,7 @@ export function App() {
   useEffect(() => {
     void connectSource().then(setSource)
   }, [])
+  useEffect(() => source?.watch(), [source])
   if (!source) return <Loading />
   return (
     <SourceProvider source={source}>
@@ -32,8 +33,10 @@ export function App() {
 /** Styles and the lens come first: every verdict on every page is computed from them. */
 function Lens() {
   const source = useSource()
-  const { mode, lost } = useSourceState()
-  const lens = useResource(`${mode}:lens`, () =>
+  const { lost, restored } = useSourceState()
+  // Not keyed on the mode: the API and the bundle serve the same styles, and re-keying would unmount the whole
+  // app (and the replay's clock) whenever it switches between them.
+  const lens = useResource("lens", () =>
     Promise.all([source.styles(), source.lens()])
   )
 
@@ -43,6 +46,13 @@ function Lens() {
         description: "Switched to the offline bundle.",
       })
   }, [lost])
+
+  useEffect(() => {
+    if (restored)
+      toast.success("The live API is back", {
+        description: "Switched back from the offline bundle.",
+      })
+  }, [restored])
 
   if (lens.status === "loading") return <Loading />
   if (lens.status === "error") {

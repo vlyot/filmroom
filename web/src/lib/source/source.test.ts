@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 
 import { ApiSource } from "@/lib/source/api"
 import { BundleSource, bundlePath } from "@/lib/source/bundle"
-import { FallbackSource } from "@/lib/source/fallback"
+import { FallbackSource, REPROBE_MS } from "@/lib/source/fallback"
 
 const HEALTH = {
   status: "ok",
@@ -16,7 +16,10 @@ const json = (body: unknown, status = 200) =>
     headers: { "content-type": "application/json" },
   })
 
-afterEach(() => vi.unstubAllGlobals())
+afterEach(() => {
+  vi.unstubAllGlobals()
+  vi.useRealTimers()
+})
 
 describe("bundle paths", () => {
   it("mirror the exporter's route_to_path", () => {
@@ -132,5 +135,92 @@ describe("fallback source", () => {
     up = true
     expect(await source.goLive()).toBe(true)
     expect(source.getState()).toMatchObject({ mode: "live", health: HEALTH })
+  })
+})
+
+describe("re-probing while offline", () => {
+  /** An API that is down until `up` is set, behind a source that started offline. */
+  function setup() {
+    const api = { up: false }
+    const fetch = vi.fn(async (url: string) => {
+      if (url.startsWith("http://api") && !api.up)
+        throw new TypeError("fetch failed")
+      return json(url.startsWith("http://api") ? HEALTH : [])
+    })
+    vi.stubGlobal("fetch", fetch)
+    vi.useFakeTimers()
+    const source = new FallbackSource(
+      new ApiSource("http://api"),
+      new BundleSource("/bundle/"),
+      null
+    )
+    const healthCalls = () =>
+      fetch.mock.calls.filter(([url]) => url.startsWith("http://api/health"))
+        .length
+    return { api, source, healthCalls }
+  }
+
+  it("goes live once the API that was down at load answers", async () => {
+    const { api, source } = setup()
+    const stop = source.watch()
+    await vi.advanceTimersByTimeAsync(REPROBE_MS)
+    expect(source.getState().mode).toBe("offline")
+    api.up = true
+    await vi.advanceTimersByTimeAsync(REPROBE_MS)
+    expect(source.getState()).toMatchObject({
+      mode: "live",
+      health: HEALTH,
+      restored: true,
+    })
+    stop()
+  })
+
+  it("comes back after losing the API mid-session", async () => {
+    const { api, source } = setup()
+    api.up = true
+    expect(await source.goLive()).toBe(true)
+    api.up = false
+    await source.matches()
+    expect(source.getState()).toMatchObject({ mode: "offline", lost: true })
+    const stop = source.watch()
+    api.up = true
+    await vi.advanceTimersByTimeAsync(REPROBE_MS)
+    expect(source.getState()).toMatchObject({ mode: "live", lost: false })
+    stop()
+  })
+
+  it("never probes after offline was chosen by hand", async () => {
+    const { api, source, healthCalls } = setup()
+    api.up = true
+    await source.goLive()
+    source.goOffline("manual")
+    const before = healthCalls()
+    const stop = source.watch()
+    await vi.advanceTimersByTimeAsync(REPROBE_MS * 3)
+    expect(healthCalls()).toBe(before)
+    expect(source.getState()).toMatchObject({ mode: "offline", manual: true })
+    stop()
+  })
+
+  it("stops probing once live", async () => {
+    const { api, source, healthCalls } = setup()
+    api.up = true
+    const stop = source.watch()
+    await vi.advanceTimersByTimeAsync(REPROBE_MS)
+    const after = healthCalls()
+    await vi.advanceTimersByTimeAsync(REPROBE_MS * 3)
+    expect(healthCalls()).toBe(after)
+    stop()
+  })
+
+  it("skips probes while the tab is hidden", async () => {
+    const { api, source, healthCalls } = setup()
+    vi.stubGlobal("document", { hidden: true })
+    api.up = true
+    const stop = source.watch()
+    await vi.advanceTimersByTimeAsync(REPROBE_MS * 2)
+    expect(healthCalls()).toBe(0)
+    expect(source.getState().mode).toBe("offline")
+    stop()
   })
 })
