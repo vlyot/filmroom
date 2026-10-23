@@ -4,7 +4,7 @@
 
 **An AI film-room analyst that finds the moments where a clearly better option was on, judges them against the coach's own tactical style, and explains them to coaches, players and fans, with every number checked.**
 
-**Live app:** https://vlyot.github.io/filmroom/ · **Demo video:** _link added at submission_
+**Live app:** https://vlyot.github.io/filmroom/ · **Demo video:** [watch on YouTube](https://youtu.be/gqU174Mo1qQ)
 
 Built for the Microsoft × Premier League "Inside the Game" hackathon, on synthetic match data.
 
